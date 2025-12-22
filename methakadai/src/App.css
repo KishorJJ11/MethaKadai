@@ -1,0 +1,298 @@
+/* --- LOGIN POPUP DESIGN --- */
+
+/* 1. Dark Background Overlay (Blur Effect) */
+.login-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6); /* Iruttana background */
+  backdrop-filter: blur(5px); /* Pinnadi irukurathu muthama theriyum */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* Ellathukum mela */
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* 2. Login Box (Glassmorphism Look) */
+.login-box {
+  background: white;
+  padding: 40px;
+  border-radius: 15px;
+  width: 350px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  position: relative; /* Close button positioning kaga */
+  text-align: center;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* 3. Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* 4. Cross Button (X) */
+.close-x-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-x-btn:hover {
+  color: #e74c3c; /* Red color on hover */
+}
+
+/* 5. Heading */
+.login-box h2 {
+  margin-bottom: 25px;
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+/* 6. Inputs */
+.login-box input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f9f9f9;
+  transition: all 0.3s;
+}
+
+.login-box input:focus {
+  outline: none;
+  border-color: #f1c40f;
+  background-color: white;
+  box-shadow: 0 0 5px rgba(241, 196, 15, 0.3);
+}
+
+/* 7. Submit Button */
+.login-submit {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #f1c40f, #f39c12); /* Gradient color */
+  color: #2c3e50;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: transform 0.2s;
+}
+
+.login-submit:active {
+  transform: scale(0.98); /* Click panna chinna shrink effect */
+}
+
+/* 8. Switch Text */
+.switch-text {
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.switch-text span {
+  color: #3498db;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.switch-text span:hover {
+  text-decoration: underline;
+}
+
+/* Buttons Group (Cart + Wishlist) */
+.buttons-group {
+    display: flex;
+    gap: 10px;
+}
+
+.product-card img {
+  width: 100%;       /* Card agalathuku fulla irukkum */
+  height: 200px;     /* Height: Idhu dhaan mukkiyam! Fixed ah 200px dhaan irukkum */
+  object-fit: cover; /* Image-a nanjukka vidama, azhaga crop panni kaattum */
+  border-radius: 5px 5px 0 0; /* Mela mattum valainju irukkum */
+}
+
+.cart-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.wishlist-btn {
+    background-color: #fce4ec; /* Light Pink */
+    color: #e74c3c;
+    border: 0px solid #e74c3c;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wishlist-btn:hover {
+    background-color: #e74d3c83;
+    color: white;
+}
+
+.actions-row {
+    display: flex;
+    gap: 40px;
+    margin-top: 15px;
+    align-items: center;
+    margin-top: 15px;
+}
+
+/* Banner Box Design */
+.sale-banner {
+  background-color: #f1c40f; 
+  color: #2c3e50; 
+  overflow: hidden; /* Veliya pora text theriyakudathu */
+  white-space: nowrap; /* Text break aaga koodathu */
+  padding: 12px 0;
+  font-weight: bold;
+  border-bottom: 2px solid #e67e22;
+  width: 100%; /* Full screen width */
+}
+
+/* Text Animation Settings */
+.scrolling-text {
+  display: inline-block;
+  font-size: 1.1rem;
+  padding-left: 100%; /* Start panra dam */
+  
+  /* 20s = Speed (Adhigamakkuna slow aagum) */
+  animation: scroll-left 20s linear infinite; 
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.product-card {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  background-color: rgba(255, 166, 0, 0.632);
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Animation Logic */
+@keyframes scroll-left {
+  0% {
+    /* Screen oda Right side edge-la irunthu start aaganum */
+    transform: translateX(0); 
+  }
+  100% {
+    /* Text oda muzhu neelamum Left side poyi marayanum */
+    transform: translateX(-100%); 
+  }
+}
+
+
+/* --- APP RESPONSIVE --- */
+
+/* Mobile view (768px ku keela) */
+@media (max-width: 768px) {
+  
+  /* Container side gap kuraippom */
+  .container {
+    width: 95%;
+    margin: 10px auto;
+  }
+
+  /* Grid 2 Column-a maarum (Flipkart/Amazon maari) */
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  /* Product Card Text Size */
+  .card-details h3 {
+    font-size: 0.9rem; /* Perusu chinna aakum */
+  }
+  
+  /* Price & Button Alignment */
+  .actions-row {
+    flex-direction: column; /* Price mela, button keela */
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .buttons-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .cart-btn {
+    font-size: 0.8rem;
+    padding: 8px;
+    width: 100%;
+  }
+}
+
+/* --- PASSWORD EYE ICON STYLES --- */
+
+/* 1. Container (Idhu kulla dhaan Input & Icon irukkum) */
+.password-input-container {
+    position: relative; /* Idhu iruntha dhaan icon ulla nikka vekka mudiyum */
+    width: 100%;
+    margin-bottom: 15px; /* Adutha button kitta ottama irukka */
+}
+
+/* 2. Input Box Adjustment */
+.password-input-container input {
+    width: 100%;
+    padding: 12px;
+    padding-right: 40px; /* Right side la text icon mela padama irukka gap */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: #f9f9f9;
+    box-sizing: border-box; /* Padding serthu count aaga */
+}
+
+/* 3. Eye Icon Style */
+.password-toggle-icon {
+    position: absolute;
+    right: 15px; /* Right side orama */
+    top: 50%;
+    transform: translateY(-50%); /* Correct-a center la vara */
+    cursor: pointer;
+    font-size: 1.2rem;
+    user-select: none; /* Double click panna select aaga koodadhu */
+    background: none;
+}

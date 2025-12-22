@@ -1,0 +1,201 @@
+/* client/src/components/Cart.css */
+.cart-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+.cart-content {
+    display: flex;
+    gap: 30px;
+}
+
+/* Left Side: Items List */
+.cart-items {
+    flex: 2; /* 2 pangu eduthukkum */
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    border: 1px solid #eee;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.cart-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-5px);
+}
+
+.cart-item img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-right: 20px;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.remove-btn {
+    background-color: #ffebee;
+    color: #c0392b;
+    border: 1px solid #c0392b;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.remove-btn:hover {
+    background-color: #c0392b;
+    color: white;
+}
+
+/* Right Side: Bill Summary */
+.cart-summary {
+    flex: 1; /* 1 pangu eduthukkum */
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    height: fit-content;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.total {
+    font-weight: bold;
+    font-size: 1.3rem;
+    color: #2c3e50;
+    border-top: 2px solid #eee;
+    padding-top: 15px;
+}
+
+.checkout-btn {
+    width: 100%;
+    background-color: #27ae60;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.back-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    color: #3498db;
+    margin-top: 15px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.empty-cart {
+    text-align: center;
+    padding: 50px;
+}
+
+/* --- CART RESPONSIVE --- */
+@media (max-width: 768px) {
+  .cart-content {
+    flex-direction: column; /* Side-by-side pogi, Mela-Keela varum */
+  }
+
+  .cart-items, .cart-summary {
+    width: 100%; /* Full width eduthukkum */
+  }
+
+  .cart-item {
+    flex-direction: row; /* Item ulla image-text pakka pakkathula irukkattum */
+    align-items: start;
+  }
+
+  .cart-item img {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+/* Quantity Box Design */
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    background: #f1f2f6;
+    padding: 5px 10px;
+    border-radius: 5px;
+    width: fit-content;
+}
+
+.quantity-controls button {
+    background: white;
+    border: 1px solid #ccc;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.quantity-controls button:hover {
+    background-color: #ddd;
+}
+
+.quantity-controls span {
+    font-weight: bold;
+    font-size: 1rem;
+    min-width: 20px;
+    text-align: center;
+}
+
+.subtotal {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+/* Continue Shopping Button (Top Left) */
+.continue-shop-btn {
+    background: none;
+    border: none;
+    color: #3498db;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 10px;
+    font-weight: bold;
+    padding: 0;
+}
+
+.continue-shop-btn:hover {
+    text-decoration: underline;
+    color: #2980b9;
+}
+
+/* Empty Cart Button Style */
+.start-shop-btn {
+    background-color: #f1c40f;
+    border: none;
+    padding: 10px 20px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 10px;
+}

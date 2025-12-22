@@ -1,0 +1,130 @@
+/* client/src/components/Wishlist.css */
+.wishlist-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+.wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.wishlist-card {
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.wishlist-card:hover {
+    transform: translateY(-5px);
+}
+
+.wishlist-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.wishlist-details h3 {
+    margin: 10px 0;
+    font-size: 1.1rem;
+}
+
+.price {
+    color: #27ae60;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+.wishlist-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.add-cart-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.remove-btn {
+    background-color: white;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+    padding: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.empty-wishlist {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.empty-wishlist button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* --- WISHLIST RESPONSIVE --- */
+@media (max-width: 768px) {
+  .wishlist-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 items per row */
+    gap: 10px;
+  }
+  
+  .wishlist-card img {
+    height: 120px; /* Image height kuraikkalam */
+  }
+}
+
+/* Top Back Button */
+.back-btn-top {
+    background: none;
+    border: none;
+    color: #3498db;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 10px;
+    font-weight: bold;
+    padding: 0;
+    display: block; /* Thaniya oru line la nikka */
+}
+
+.back-btn-top:hover {
+    text-decoration: underline;
+    color: #2980b9;
+}
+
+/* Empty State Button */
+.start-shop-btn {
+    background-color: #f1c40f;
+    border: none;
+    padding: 10px 20px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 15px;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.start-shop-btn:hover {
+    background-color: #f39c12;
+}

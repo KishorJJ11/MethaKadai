@@ -1,0 +1,243 @@
+/* Navbar Container */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2c3e50; /* Dark Blue Background */
+    color: white;
+    padding: 10px 20px;
+    position: relative; /* Mobile menu keela vara idhu mukkiyam */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Logo Styles */
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.web-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #f1c40f; /* Yellow Text */
+}
+
+/* --- DESKTOP MENU STYLES --- */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.nav-actions span {
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.wishlist-icon, .cart-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+/* Red Badge Number */
+.badge {
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    position: absolute;
+    top: -8px;
+    right: -10px;
+}
+
+/* --- MOBILE STYLES (Hamburger & Dropdown) --- */
+
+/* Default ah Hamburger maraichu vaipom (Laptop kaga) */
+.hamburger {
+    display: none; 
+    font-size: 1.8rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Mobile Dropdown Box Design */
+.mobile-menu {
+    position: absolute;
+    top: 100%; /* Navbar ku sariya keela */
+    right: 0;
+    width: 200px;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    border-bottom-left-radius: 10px;
+}
+
+.mobile-item {
+    padding: 15px;
+    color: #2c3e50;
+    border-bottom: 1px solid #eee;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.mobile-item:hover {
+    background-color: #f8f9fa;
+}
+
+.login-item {
+    background-color: #f1c40f; /* Manjal background for login */
+    text-align: center;
+}
+
+/* --- MEDIA QUERY (Mobile Logic) --- */
+@media (max-width: 768px) {
+    /* 1. Mobile la Desktop menu va MARAIKKANUM */
+    .desktop-menu {
+        display: none;
+    }
+
+    /* 2. Hamburger icon a KAATTANUM */
+    .hamburger {
+        display: block;
+    }
+
+    .navbar {
+        padding: 15px;
+    }
+}
+
+
+/* Navbar.css Updates */
+
+/* User Name Style */
+.user-name {
+    font-weight: bold;
+    color: #f1c40f; /* Manjal color */
+    margin-right: 10px;
+    font-size: 1rem;
+}
+
+/* User Section (Name + Logout Button) */
+.user-section {
+    display: flex;
+    align-items: center;
+}
+
+/* Login Button (Yellow) */
+.login-btn {
+    background-color: #f1c40f;
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 5px;
+    color: #2c3e50;
+    transition: background 0.3s;
+}
+
+.login-btn:hover {
+    background-color: #f39c12;
+}
+
+/* Logout Button (Red) */
+.logout-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.logout-btn:hover {
+    background-color: #c0392b;
+}
+
+/* Mobile Logout Item */
+.logout-item {
+    background-color: #e74c3c; /* Red background in mobile menu */
+    color: white;
+}
+
+/* Navbar.css Additions */
+
+/* 1. Profile Avatar (Round Photo Logic) */
+.nav-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #f1c40f; /* Manjal Color */
+    color: #2c3e50;
+    font-weight: bold;
+    font-size: 1.2rem;
+    border-radius: 50%; /* Idhu dhaan round aakkuthu */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: 2px solid white;
+    transition: transform 0.2s;
+    margin-left: 15px; /* Matha items kitta irunthu gap */
+}
+
+.nav-avatar:hover {
+    transform: scale(1.1); /* Hover panna konjam perusaagum */
+    background-color: #f39c12;
+}
+
+/* 2. User Section Alignment */
+.user-section {
+    display: flex;
+    align-items: center;
+}
+
+/* 3. Small Logout Button (Power Icon) */
+.logout-btn-small {
+    background: none;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 15px;
+    transition: all 0.3s;
+}
+
+.logout-btn-small:hover {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.orders-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 5px;
+    margin-left: 15px;
+    transition: background 0.3s;
+}

@@ -1,0 +1,234 @@
+/* client/src/components/Checkout.css */
+.checkout-container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+.checkout-content {
+    display: flex;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+/* Form Design */
+.checkout-form {
+    flex: 2;
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.place-order-btn {
+    width: 100%;
+    background-color: #27ae60;
+    color: white;
+    padding: 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.place-order-btn:hover {
+    background-color: #219150;
+}
+
+/* Order Summary Design */
+.order-summary {
+    flex: 1;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    height: fit-content;
+    border: 1px solid #eee;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-top: 10px;
+    color: #2c3e50;
+}
+
+.back-link {
+    background: none;
+    border: none;
+    color: #3498db;
+    margin-top: 20px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+
+/* --- CHECKOUT RESPONSIVE --- */
+@media (max-width: 768px) {
+  .checkout-content {
+    flex-direction: column-reverse; /* Summary mela, Form keela vara vaikkalam (illana column podu) */
+  }
+
+  .checkout-form, .order-summary {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+}
+
+.checkout-container {
+    padding: 30px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.checkout-content {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.checkout-form {
+    flex: 2;
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.order-summary-box {
+    flex: 1;
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    height: fit-content;
+    border: 1px solid #e9ecef;
+}
+
+.checkout-form label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.checkout-form input[type="text"], 
+.checkout-form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.checkout-form textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.payment-options label {
+    display: block;
+    cursor: pointer;
+    font-weight: normal;
+    margin-bottom: 10px;
+}
+
+.place-order-btn {
+    width: 100%;
+    background-color: #27ae60;
+    color: white;
+    padding: 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-top: 20px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.place-order-btn:hover {
+    background-color: #219150;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #e74c3c;
+    margin-top: 10px;
+}
+
+/* UPI Section Styles */
+.upi-section {
+    background-color: #f0f3f4;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 15px;
+    text-align: center;
+    border: 2px dashed #3498db;
+}
+
+.upi-instruction {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.qr-box {
+    background: white;
+    padding: 10px;
+    display: inline-block;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.transaction-input {
+    border: 2px solid #27ae60 !important; /* Green border to highlight */
+    background-color: #eafaf1;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.small-note {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
