@@ -26,12 +26,14 @@ mongoose.connect(MONGO_URI)
 .catch(err => console.error("MongoDB Error:", err));
 
 
-// --- MAIL CONFIGURATION ---
+// --- MAIL CONFIGURATION (UPDATED FOR RENDER) 📧 ---
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: "smtp.gmail.com", // Gmail server address
+    port: 465,              // Secure port
+    secure: true,           // Use SSL
     auth: {
         user: 'kishorjj05@gmail.com',
-        pass: 'owea djde lrry mvaq' 
+        pass: 'owea djde lrry mvaq' // Un App Password
     }
 });
 
