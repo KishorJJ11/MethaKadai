@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Routes, Route, useNavigate } from 'react-router-dom'; 
-import { Toaster, toast } from 'react-hot-toast'; 
+import { Toaster, toast } from 'react-hot-toast'; // IMPORT PANNIRUKKEN 🔥
 
 import Navbar from './components/Navbar';
 import Cart from './components/Cart';
@@ -28,40 +28,48 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
-  
-  // ADMIN STATE 👑
-  const [isAdminLogin, setIsAdminLogin] = useState(false); 
+  const [isAdminLogin, setIsAdminLogin] = useState(false); // Admin mode on/off
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/products')
+    axios.get('https://methakadai.onrender.com/api/products')
       .then(response => setProducts(response.data))
       .catch(error => console.error("Error loading products:", error));
   }, []);
 
   // --- CART LOGIC ---
+  // --- UPDATED ADD TO CART LOGIC ---
   const addToCart = (product) => {
     if (!currentUser) {
         toast.error("Please Login to add items to Cart! 🛒");
         setShowLogin(true);
         return;
     }
+
+    // Check: Ithu already cart la irukka?
     const existingItem = cart.find(item => item._id === product._id);
+
     if (existingItem) {
+        // Iruntha: Quantity ah mattum increase pannu
         setCart(cart.map(item => 
-            item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+            item._id === product._id 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
         ));
         toast.success(`Quantity updated for ${product.name}! 🔄`);
     } else {
+        // Illana: Puthusa add pannu (Quantity: 1 nu set panni)
         setCart([...cart, { ...product, quantity: 1 }]);
         toast.success(`${product.name} Added to Cart! 🛒`);
     }
   };
 
+  // --- NEW: UPDATE QUANTITY (+ / -) ---
   const updateQuantity = (productId, amount) => {
     setCart(cart.map(item => {
         if (item._id === productId) {
+            // Quantity 1 ku keela poga koodathu logic
             const newQuantity = item.quantity + amount;
             return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 };
         }
@@ -86,7 +94,7 @@ function App() {
     }
     const exists = wishlist.find(item => item._id === product._id);
     if (exists) { 
-        toast("Already in Wishlist!", { icon: 'ℹ️' }); 
+        toast("Already in Wishlist!", { icon: 'ℹ️' }); // Info Toast
     } else { 
         setWishlist([...wishlist, product]); 
         toast.success("Added to Wishlist ❤️"); 
@@ -99,57 +107,40 @@ function App() {
     toast.success("Removed from Wishlist");
   };
 
-  // --- LOGIN / SIGNUP LOGIC (UPDATED) 🔐 ---
+  // --- LOGIN / SIGNUP LOGIC ---
   const handleAuth = async (e) => {
     e.preventDefault();
 
-    // 1. ADMIN LOGIN CHECK 👑
-    if (isAdminLogin) {
-        // Simple Hardcoded Admin Check
-        if (email === 'admin@gmail.com' && password === 'admin123') { 
-            toast.success("Welcome Boss! 👑");
-            setCurrentUser('admin');
-            setShowLogin(false);
-            navigate('/admin'); // Admin Dashboard ku po
-        } else {
-            toast.error("Invalid Admin Credentials! ❌");
-        }
-        return;
-    }
-
-    // 2. NORMAL USER LOGIC
+    // 1. LOGIN LOGIC (Simle)
     if (isLogin) {
         try {
-            const res = await axios.post('http://localhost:5000/api/login', { email, password });
+            const res = await axios.post('https://methakadai.onrender.com/api/login', { email, password });
             toast.success(res.data.message);
-            
-            // Check if username is admin (Security Net)
-            if(res.data.username === 'admin') {
-                setCurrentUser('admin');
-                navigate('/admin');
-            } else {
-                setCurrentUser(res.data.username);
-                navigate('/');
-            }
+            setCurrentUser(res.data.username);
             setShowLogin(false);
         } catch (error) { toast.error(error.response?.data?.message || "Login Failed"); }
         return;
     }
 
-    // 3. SIGNUP LOGIC
+    // 2. SIGNUP LOGIC (With OTP)
+    
+    // Case A: OTP Innum Anuppala (First Step)
     if (!isOtpSent) {
         try {
-            const res = await axios.post('http://localhost:5000/api/send-otp', { email });
+            const res = await axios.post('https://methakadai.onrender.com/api/send-otp', { email });
             toast.success(res.data.message);
-            setIsOtpSent(true); 
+            setIsOtpSent(true); // OTP Sent! Show OTP Input box
         } catch (error) { toast.error(error.response?.data?.message || "OTP Send Failed"); }
-    } else {
+    } 
+    
+    // Case B: OTP Anuppiyachu, Verify Panna porom (Second Step)
+    else {
         try {
-            const res = await axios.post('http://localhost:5000/api/signup', { username, email, password, otp });
+            const res = await axios.post('https://methakadai.onrender.com/api/signup', { username, email, password, otp });
             toast.success(res.data.message);
             setCurrentUser(username);
             setShowLogin(false);
-            setIsOtpSent(false); 
+            setIsOtpSent(false); // Reset for next time
             setOtp("");
         } catch (error) { toast.error(error.response?.data?.message || "Invalid OTP"); }
     }
@@ -163,6 +154,10 @@ function App() {
 
   return (
     <div>
+      {/* IMPORTANT: TOASTER COMPONENT 
+          position="bottom-center" -> Keela nadula varum
+          reverseOrder={false} -> Puthu msg keela varum
+      */}
       <Toaster position="bottom-center" reverseOrder={false} />
 
       <Navbar 
@@ -173,47 +168,28 @@ function App() {
         handleLogout={handleLogout}
       /> 
 
-      {/* --- LOGIN POPUP (UPDATED WITH ADMIN BUTTON) --- */}
+      {/* Login Popup */}
       {showLogin && (
         <div className="login-overlay" onClick={() => setShowLogin(false)}>
           <div className="login-box" onClick={(e) => e.stopPropagation()}>
             <button className="close-x-btn" onClick={() => setShowLogin(false)}>×</button>
 
-            {/* 🔥 ADMIN TOGGLE BUTTON */}
-            <button 
-                className="admin-toggle-btn" 
-                onClick={() => {
-                    setIsAdminLogin(!isAdminLogin);
-                    setIsLogin(true); // Always set to Login mode for Admin
-                }}
-            >
-                {isAdminLogin ? '← User Login' : '👑 Admin Login'}
-            </button>
-
-            {/* DYNAMIC TITLE */}
-            <h2 style={{marginTop: '20px'}}>
-                {isAdminLogin ? 'Admin Portal 🔒' : (isLogin ? 'Welcome Back! 👋' : 'Create Account 🚀')}
-            </h2>
+            <h2>{isLogin ? 'Welcome Back! 👋' : 'Create Account 🚀'}</h2>
             
             <form onSubmit={handleAuth}>
-              {/* Username: Hide for Admin & User Login */}
-              {!isLogin && !isAdminLogin && (
+              {!isLogin && (
                   <input type="text" placeholder="Username" required value={username} onChange={(e) => setUsername(e.target.value)}/>
               )}
 
-              <input 
-                type="email" 
-                placeholder={isAdminLogin ? "Admin Email" : "Email Address"} 
-                required value={email} onChange={(e) => setEmail(e.target.value)}
-              />
+              <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)}/>
               
               <div className="password-input-container">
                 <input type={showPassword ? "text" : "password"} placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)}/>
                 <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</span>
               </div>
 
-              {/* OTP BOX (Only for User Signup) */}
-              {!isLogin && !isAdminLogin && isOtpSent && (
+              {/* OTP BOX (Mattum Signup appo OTP sent aanathukku apro varum) */}
+              {!isLogin && isOtpSent && (
                   <input 
                     type="text" 
                     placeholder="Enter OTP (Check Email)" 
@@ -224,20 +200,17 @@ function App() {
                   />
               )}
               
-              <button className={`login-submit ${isAdminLogin ? 'admin-submit' : ''}`}>
-                {isAdminLogin ? 'Login as Admin' : (isLogin ? 'Login' : (isOtpSent ? 'Verify & Register 🚀' : 'Send OTP 📩'))}
+              <button className="login-submit">
+                {isLogin ? 'Login' : (isOtpSent ? 'Verify & Register 🚀' : 'Send OTP 📩')}
               </button>
             </form>
 
-            {/* Switch Text (Hide for Admin) */}
-            {!isAdminLogin && (
-                <p className="switch-text">
-                    {isLogin ? "New here? " : "Already have an account? "}
-                    <span onClick={() => setIsLogin(!isLogin)}>
-                    {isLogin ? "Create Account" : "Login"}
-                    </span>
-                </p>
-            )}
+            <p className="switch-text">
+              {isLogin ? "New here? " : "Already have an account? "}
+              <span onClick={() => setIsLogin(!isLogin)}>
+                {isLogin ? "Create Account" : "Login"}
+              </span>
+            </p>
           </div>
         </div>
       )}
@@ -282,14 +255,25 @@ function App() {
         } />
 
         <Route path="/product/:id" element={<ProductDetails addToCart={addToCart} />} />
-        <Route path="/cart" element={<Cart cart={cart} removeFromCart={removeFromCart} updateQuantity={updateQuantity} />} />
+        <Route path="/cart" element={
+            <Cart 
+              cart={cart} 
+              removeFromCart={removeFromCart} 
+              updateQuantity={updateQuantity} // Idhai pudhusa serthu vidu
+            />
+          } 
+        />
         <Route path="/wishlist" element={<Wishlist wishlist={wishlist} addToCart={addToCart} removeFromWishlist={removeFromWishlist} />} />
-        <Route path="/checkout" element={<Checkout cart={cart} clearCart={clearCart} currentUser={currentUser} />} />
+        {/* Checkout ku currentUser ah pass panrom */}
+        <Route 
+          path="/checkout" 
+          element={<Checkout cart={cart} clearCart={clearCart} currentUser={currentUser} />} 
+        />
         <Route path="/profile" element={<Profile currentUser={currentUser} setCurrentUser={setCurrentUser} />} />
+
         <Route path="/myorders" element={<MyOrders currentUser={currentUser} />} />
 
-        {/* ADMIN ROUTE (Passed currentUser for security) */}
-        <Route path="/admin" element={<AdminOrders currentUser={currentUser} />} />
+        <Route path="/admin" element={<AdminOrders />} />
       </Routes>
 
     </div>

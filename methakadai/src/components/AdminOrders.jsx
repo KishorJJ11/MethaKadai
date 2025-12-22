@@ -19,7 +19,7 @@ function AdminOrders({ currentUser }) {
 
   const fetchOrders = async () => {
     try {
-        const res = await axios.get('http://localhost:5000/api/orders');
+        const res = await axios.get('https://methakadai.onrender.com/api/orders');
         setOrders(res.data.reverse()); 
     } catch (error) {
         console.error("Orders load aagala");
@@ -28,7 +28,7 @@ function AdminOrders({ currentUser }) {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-        await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, { status: newStatus });
+        await axios.put(`https://methakadai.onrender.com/api/orders/${orderId}/status`, { status: newStatus });
         toast.success(`Status Updated to: ${newStatus} ✅`);
         fetchOrders(); 
         

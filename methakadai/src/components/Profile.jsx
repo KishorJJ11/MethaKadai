@@ -26,7 +26,7 @@ function Profile({ currentUser, setCurrentUser }) {
 
   const fetchUserData = () => {
     // Admin ah irundhalum DB call pogum (So namma Signup panna data varum)
-    axios.get(`http://localhost:5000/api/users/${currentUser}`)
+    axios.get(`https://methakadai.onrender.com/api/users/${currentUser}`)
         .then(res => {
             setUserData(res.data);
             setFormData({
@@ -68,7 +68,7 @@ function Profile({ currentUser, setCurrentUser }) {
 
   const handleSave = async () => {
     try {
-        const res = await axios.put(`http://localhost:5000/api/users/${currentUser}`, formData);
+        const res = await axios.put(`https://methakadai.onrender.com/api/users/${currentUser}`, formData);
         toast.success("Profile Update Panniyachu! ✅");
         if (formData.username !== currentUser) {
             // Admin username ah maatha vittura koodadhu, but safe side ku irukkattum

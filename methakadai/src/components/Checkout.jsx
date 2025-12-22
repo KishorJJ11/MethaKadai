@@ -22,7 +22,7 @@ function Checkout({ cart, clearCart, currentUser }) {
 
   useEffect(() => {
     if (currentUser) {
-        axios.get(`http://localhost:5000/api/users/${currentUser}`)
+        axios.get(`https://methakadai.onrender.com/api/users/${currentUser}`)
             .then(res => {
                 const user = res.data;
                 setFormData({
@@ -60,7 +60,7 @@ function Checkout({ cart, clearCart, currentUser }) {
     };
 
     try {
-        await axios.post('http://localhost:5000/api/orders', orderData);
+        await axios.post('https://methakadai.onrender.com/api/orders', orderData);
         toast.success(formData.paymentMethod === 'UPI' ? "Payment Verified & Order Placed! 🎉" : "Order Placed Successfully! 🎉");
         clearCart();
         navigate('/'); 

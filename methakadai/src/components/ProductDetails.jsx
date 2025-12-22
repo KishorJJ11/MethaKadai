@@ -10,7 +10,7 @@ function ProductDetails({ addToCart }) {
 
   useEffect(() => {
     // Backend kitta irunthu antha oru product data va vangurathu
-    axios.get(`http://localhost:5000/api/products/${id}`)
+    axios.get(`https://methakadai.onrender.com/api/products/${id}`)
       .then(res => setProduct(res.data))
       .catch(err => console.error("Error:", err));
   }, [id]);
