@@ -19,7 +19,7 @@ app.use(cors({
 
 // 👇👇 INGA PAARU MAPLA! 👇👇
 // Un username & password ah correct ah replace pannu. Example: kishor:mypassword123
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://KishorJJ:Kishor%402005@cluster0.d1zekd4.mongodb.net/?appName=Cluster0';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://KishorJJ:KishorJJ2005@cluster0.d1zekd4.mongodb.net/?appName=Cluster0';
 
 mongoose.connect(MONGO_URI)
 .then(() => console.log("MongoDB Connected! 🔥"))
