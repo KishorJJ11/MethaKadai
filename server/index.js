@@ -27,30 +27,23 @@ mongoose.connect(MONGO_URI)
 .catch(err => console.error("MongoDB Error:", err));
 
 
-// --- MAIL CONFIGURATION (FINAL FIX) 📧 ---
+// --- MAIL CONFIGURATION (BREVO SMTP) 📧 ---
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',  // 👈 Screenshot la irukkura Server
-    port: 587,                     // 👈 Screenshot la irukkura Port
-    secure: false,                 // Port 587 requires false
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
     auth: {
-        user: process.env.EMAIL_USER, // Render la set panna 'Login' ID
-        pass: process.env.EMAIL_PASS  // Render la set panna 'Password'
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
     }
 });
 
-let otpStore = {};
+let otpStore = {}; 
 
 // --- SCHEMAS ---
 
 const productSchema = new mongoose.Schema({
-    name: String, 
-    price: Number, 
-    size: String, 
-    material: String, 
-    warranty: String, 
-    images: [String], 
-    image: String,    
-    description: String
+    name: String, price: Number, size: String, material: String, warranty: String, images: [String], image: String, description: String
 });
 const Product = mongoose.model('Product', productSchema);
 
@@ -65,15 +58,8 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 const orderSchema = new mongoose.Schema({
-    name: String, 
-    address: String,
-    phone: String,
-    paymentMethod: String,
-    transactionId: { type: String, default: "" },
-    cartItems: Array, 
-    totalAmount: Number,
-    status: { type: String, default: "Ordered" }, 
-    orderDate: { type: Date, default: Date.now } 
+    name: String, address: String, phone: String, paymentMethod: String, transactionId: { type: String, default: "" },
+    cartItems: Array, totalAmount: Number, status: { type: String, default: "Ordered" }, orderDate: { type: Date, default: Date.now } 
 });
 const Order = mongoose.model('Order', orderSchema);
 
@@ -83,12 +69,7 @@ const createAdminAccount = async () => {
         const adminExists = await User.findOne({ username: 'admin' });
         if (!adminExists) {
             const newAdmin = new User({
-                username: 'admin',
-                email: 'admin@gmail.com',
-                password: 'admin123', 
-                phone: '9876543210',
-                address: 'MethaKadai Head Office, Tamil Nadu.',
-                profilePic: '' 
+                username: 'admin', email: 'admin@gmail.com', password: 'admin123', phone: '9876543210', address: 'MethaKadai Head Office, Tamil Nadu.', profilePic: '' 
             });
             await newAdmin.save();
             console.log("👑 Admin Account Created Successfully!");
@@ -104,7 +85,8 @@ createAdminAccount();
 
 // --- API ROUTES ---
 
-// SEND OTP ROUTE (FAIL-SAFE VERSION 🛡️)
+// 1. SEND OTP ROUTE (INSTANT DEMO VERSION ⚡)
+// (Mail anuppa try pannum, mudiyalana logs la kaattum)
 app.post('/api/send-otp', async (req, res) => {
     const { email } = req.body;
     console.log(`📨 Requesting OTP for: ${email}`);
@@ -115,19 +97,16 @@ app.post('/api/send-otp', async (req, res) => {
             return res.status(400).json({ message: "Indha email la already account irukku!" }); 
         }
 
-        // 1. OTP Create Pannuvom
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStore[email] = otp; 
 
-        // 2. Log OTP (Backup ku irukkattum)
+        // Log OTP for easy access
         console.log("========================================");
         console.log(`🔑 BYPASS OTP for ${email}: ${otp}`);
         console.log("========================================");
 
-        // 3. Email Config (BREVO SETUP) 🚀
         const mailOptions = {
-            // 👇 INGA DHAAN MAATHIRUKKEN: Un Real Email podu!
-            from: 'MethaKadai Support <kishorjj05@gmail.com>', 
+            from: `MethaKadai Support <kishorjj05@gmail.com>`, // Un Real Email
             to: email,
             subject: 'Your OTP for MethaKadai Signup',
             text: `Mapla! Un account create panna OTP idho: ${otp}. Be safe!`
@@ -137,53 +116,36 @@ app.post('/api/send-otp', async (req, res) => {
             await transporter.sendMail(mailOptions);
             console.log(`✅ Mail Sent Successfully to ${email}`);
         } catch (mailError) {
-            console.error("⚠️ Mail Failed:", mailError);
-            // Email fail aanalum OTP Logs la irukku, so user block aaga maattan.
+            console.error("⚠️ Mail Failed (Network Issue), but OTP generated in Logs.");
         }
 
-        // 4. Success Response
+        // Always return success so user can enter OTP from logs if mail fails
         res.json({ message: "OTP Generated! (Check Email or Server Logs) 📧" });
-
-    } catch (error) {
-        console.error("❌ Critical Error:", error);
-        res.status(500).json({ message: "Server Error" });
-    }
-});
-
-// SIGNUP
-// 4. SIGNUP API (MASTER KEY ADDED 🔓)
-// SEND OTP ROUTE (INSTANT DEMO VERSION ⚡)
-app.post('/api/send-otp', async (req, res) => {
-    const { email } = req.body;
-    console.log(`📨 Requesting OTP for: ${email}`);
-
-    try {
-        const existingUser = await User.findOne({ email });
-        if (existingUser) { 
-            return res.status(400).json({ message: "Indha email la already account irukku!" }); 
-        }
-
-        // Just generate a fake OTP for logs (Internal use)
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        otpStore[email] = otp; 
-
-        console.log("========================================");
-        console.log(`⚡ INSTANT MODE: Virtual OTP for ${email}: ${otp}`);
-        console.log("========================================");
-
-        // ❌ COMMENTED OUT MAILER (Time save panna) ❌
-        /*
-        const mailOptions = { ... };
-        await transporter.sendMail(mailOptions);
-        */
-       
-        // Udane Success sollu!
-        res.json({ message: "OTP Sent! (Use 123456 to Login) 🚀" });
 
     } catch (error) {
         console.error("❌ Error:", error);
         res.status(500).json({ message: "Server Error" });
     }
+});
+
+// 2. SIGNUP API (MASTER KEY ADDED 🔓)
+app.post('/api/signup', async (req, res) => {
+    const { username, email, password, otp } = req.body;
+
+    // Check OTP (Master Key: 123456)
+    if (otp === "123456") {
+        console.log("🔓 Master OTP Used! Skipping verification...");
+    } 
+    else if (!otpStore[email] || otpStore[email] !== otp) {
+        return res.status(400).json({ message: "Thappana OTP Mapla! Check pannu." });
+    }
+
+    try {
+        const newUser = new User({ username, email, password });
+        await newUser.save();
+        delete otpStore[email]; 
+        res.status(201).json({ message: "Account Created Successfully! 🎉" });
+    } catch (error) { res.status(500).json({ message: "Server Error" }); }
 });
 
 // GET PRODUCTS
@@ -263,6 +225,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
     try { const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: status }, { new: true }); res.json(updatedOrder); } catch (error) { res.status(500).json({ message: "Status update fail!" }); }
 });
 
+// PUT: Cancel Order (User Side) ❌
 app.put('/api/orders/:id/cancel', async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
@@ -280,3 +243,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT} 🚀`);
 });
+
+module.exports = app;
