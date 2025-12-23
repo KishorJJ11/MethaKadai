@@ -25,16 +25,20 @@ mongoose.connect(MONGO_URI)
 .catch(err => console.error("MongoDB Error:", err));
 
 
-// --- MAIL CONFIGURATION (SECURED 🔒) ---
+// --- MAIL CONFIGURATION (SECURE MODE FOR RENDER) ---
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,              // 👈 587 ku badhila 465 podu
+    secure: true,           // 👈 465 ku idhu TRUE ah irukkanum!
     auth: {
-        user: process.env.EMAIL_USER, // 👈 .env lerndhu edukkom
-        pass: process.env.EMAIL_PASS  // 👈 .env lerndhu edukkom
-    }
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    },
+    // 👇 Indha Timeout settings mukkiyam for Cloud Servers
+    connectionTimeout: 10000, // 10 seconds wait pannum
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 let otpStore = {}; 
