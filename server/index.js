@@ -27,13 +27,16 @@ mongoose.connect(MONGO_URI)
 
 // --- MAIL CONFIGURATION (SECURE MODE FOR RENDER) ---
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
     host: 'smtp.gmail.com',
     port: 465,              // 👈 587 ku badhila 465 podu
     secure: true,           // 👈 465 ku idhu TRUE ah irukkanum!
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+    },
+    tls: {
+        // Render-la sila neram SSL certificate prachinai varum, idhu adha fix pannum
+        rejectUnauthorized: false
     },
     // 👇 Indha Timeout settings mukkiyam for Cloud Servers
     connectionTimeout: 10000, // 10 seconds wait pannum
