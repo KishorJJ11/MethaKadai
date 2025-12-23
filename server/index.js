@@ -28,11 +28,14 @@ mongoose.connect(MONGO_URI)
 
 
 // --- MAIL CONFIGURATION (FINAL FIX) 📧 ---
+// --- MAIL CONFIGURATION (BREVO SMTP) 🚀 ---
 const transporter = nodemailer.createTransport({
-    service: 'gmail', 
+    host: 'smtp-relay.brevo.com', // 👈 Gmail illa, ippo Brevo!
+    port: 587,
+    secure: false, // Brevo requires false for 587
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: process.env.EMAIL_USER, // Render Env la irundhu edukkum
+        pass: process.env.EMAIL_PASS  // Render Env la irundhu edukkum
     }
 });
 
@@ -149,29 +152,37 @@ app.post('/api/send-otp', async (req, res) => {
 
 // SIGNUP
 // 4. SIGNUP API (MASTER KEY ADDED 🔓)
-app.post('/api/signup', async (req, res) => {
-    const { username, email, password, otp } = req.body;
-
-    console.log(`Trying Signup: ${email} with OTP: ${otp}`);
-
-    // --- 👇 BACKDOOR LOGIC 👇 ---
-    // OTP '123456' nu irundha, Check pannama Ulla vidu!
-    if (otp === "123456") {
-        console.log("🔓 Master OTP Used! Skipping verification...");
-    } 
-    // Illana, Normal verification pannu
-    else if (!otpStore[email] || otpStore[email] !== otp) {
-        return res.status(400).json({ message: "Thappana OTP Mapla!" });
-    }
+// SEND OTP ROUTE (INSTANT DEMO VERSION ⚡)
+app.post('/api/send-otp', async (req, res) => {
+    const { email } = req.body;
+    console.log(`📨 Requesting OTP for: ${email}`);
 
     try {
-        const newUser = new User({ username, email, password });
-        await newUser.save();
-        
-        delete otpStore[email]; 
-        res.status(201).json({ message: "Account Created Successfully! 🎉" });
-    } catch (error) { 
-        res.status(500).json({ message: "Server Error" }); 
+        const existingUser = await User.findOne({ email });
+        if (existingUser) { 
+            return res.status(400).json({ message: "Indha email la already account irukku!" }); 
+        }
+
+        // Just generate a fake OTP for logs (Internal use)
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        otpStore[email] = otp; 
+
+        console.log("========================================");
+        console.log(`⚡ INSTANT MODE: Virtual OTP for ${email}: ${otp}`);
+        console.log("========================================");
+
+        // ❌ COMMENTED OUT MAILER (Time save panna) ❌
+        /*
+        const mailOptions = { ... };
+        await transporter.sendMail(mailOptions);
+        */
+       
+        // Udane Success sollu!
+        res.json({ message: "OTP Sent! (Use 123456 to Login) 🚀" });
+
+    } catch (error) {
+        console.error("❌ Error:", error);
+        res.status(500).json({ message: "Server Error" });
     }
 });
 
