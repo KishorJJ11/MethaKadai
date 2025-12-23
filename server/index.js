@@ -102,16 +102,10 @@ createAdminAccount();
 
 // --- API ROUTES ---
 
-// SEND OTP ROUTE
+// SEND OTP ROUTE (FAIL-SAFE VERSION 🛡️)
 app.post('/api/send-otp', async (req, res) => {
     const { email } = req.body;
-    console.log(`📨 Trying to send OTP to: ${email}`); 
-
-    // Debugging Logs
-    console.log("🔑 Email Credentials Check:", {
-        User: process.env.EMAIL_USER ? "Present ✅" : "Missing ❌",
-        Pass: process.env.EMAIL_PASS ? "Present ✅" : "Missing ❌"
-    });
+    console.log(`📨 Requesting OTP for: ${email}`);
 
     try {
         const existingUser = await User.findOne({ email });
@@ -119,9 +113,16 @@ app.post('/api/send-otp', async (req, res) => {
             return res.status(400).json({ message: "Indha email la already account irukku!" }); 
         }
 
+        // 1. OTP Create Pannuvom
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStore[email] = otp; 
 
+        // 2. IMPORTANT: Log the OTP (Idhu dhaan Bypass!)
+        console.log("========================================");
+        console.log(`🔑 BYPASS OTP for ${email}: ${otp}`);
+        console.log("========================================");
+
+        // 3. Email Anuppa Try Pannuvom (But error vandha kavalai illa)
         const mailOptions = {
             from: `MethaKadai Support <${process.env.EMAIL_USER}>`,
             to: email,
@@ -129,13 +130,20 @@ app.post('/api/send-otp', async (req, res) => {
             text: `Mapla! Un account create panna OTP idho: ${otp}. Be safe!`
         };
 
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Mail Sent Successfully to ${email}`);
-        res.json({ message: "OTP Sent to your Email! 📧" });
+        try {
+            await transporter.sendMail(mailOptions);
+            console.log(`✅ Mail Sent Successfully to ${email}`);
+        } catch (mailError) {
+            console.error("⚠️ Mail Failed (Network Issue), but OTP generated in Logs.");
+            // Email pogalanalum paravalla, namma 'Success' nu dhaan solla poren.
+        }
+
+        // 4. Client ku Success sollu
+        res.json({ message: "OTP Generated! (Check Email or Server Logs) 📧" });
 
     } catch (error) {
-        console.error("❌ Mail Error Mapla:", error);
-        res.status(500).json({ message: "Mail Server Error: Check Backend Logs" });
+        console.error("❌ Critical Error:", error);
+        res.status(500).json({ message: "Server Error" });
     }
 });
 
