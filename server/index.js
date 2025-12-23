@@ -25,23 +25,21 @@ mongoose.connect(MONGO_URI)
 .catch(err => console.error("MongoDB Error:", err));
 
 
-// --- MAIL CONFIGURATION (SECURE MODE FOR RENDER) ---
+// --- MAIL CONFIGURATION (RENDER FIXED VERSION) 🛠️ ---
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,              // 👈 587 ku badhila 465 podu
-    secure: true,           // 👈 465 ku idhu TRUE ah irukkanum!
+    port: 587,              // 👈 BACK TO 587 (Idhu dhaan Cloud la reliable)
+    secure: false,          // 👈 587 ku idhu FALSE dhaan irukkanum!
+    requireTLS: true,       // 👈 Kandippa TLS use pannu nu solrom
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
     tls: {
-        // Render-la sila neram SSL certificate prachinai varum, idhu adha fix pannum
+        // Idhu dhaan 'Magic Fix'. Self-signed certs ah allow pannum.
+        ciphers: "SSLv3",
         rejectUnauthorized: false
-    },
-    // 👇 Indha Timeout settings mukkiyam for Cloud Servers
-    connectionTimeout: 10000, // 10 seconds wait pannum
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+    }
 });
 
 let otpStore = {}; 
