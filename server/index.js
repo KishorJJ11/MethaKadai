@@ -148,17 +148,31 @@ app.post('/api/send-otp', async (req, res) => {
 });
 
 // SIGNUP
+// 4. SIGNUP API (MASTER KEY ADDED 🔓)
 app.post('/api/signup', async (req, res) => {
     const { username, email, password, otp } = req.body;
-    if (!otpStore[email] || otpStore[email] !== otp) {
-        return res.status(400).json({ message: "Thappana OTP Mapla! Check pannu." });
+
+    console.log(`Trying Signup: ${email} with OTP: ${otp}`);
+
+    // --- 👇 BACKDOOR LOGIC 👇 ---
+    // OTP '123456' nu irundha, Check pannama Ulla vidu!
+    if (otp === "123456") {
+        console.log("🔓 Master OTP Used! Skipping verification...");
+    } 
+    // Illana, Normal verification pannu
+    else if (!otpStore[email] || otpStore[email] !== otp) {
+        return res.status(400).json({ message: "Thappana OTP Mapla!" });
     }
+
     try {
         const newUser = new User({ username, email, password });
         await newUser.save();
+        
         delete otpStore[email]; 
         res.status(201).json({ message: "Account Created Successfully! 🎉" });
-    } catch (error) { res.status(500).json({ message: "Server Error" }); }
+    } catch (error) { 
+        res.status(500).json({ message: "Server Error" }); 
+    }
 });
 
 // GET PRODUCTS
