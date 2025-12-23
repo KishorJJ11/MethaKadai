@@ -27,14 +27,14 @@ mongoose.connect(MONGO_URI)
 .catch(err => console.error("MongoDB Error:", err));
 
 
-// --- MAIL CONFIGURATION (BREVO SMTP) 📧 ---
+// --- MAIL CONFIGURATION (BREVO SMTP - REAL) 📧 ---
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 587,
-    secure: false,
+    secure: false, // Port 587 requires false
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: process.env.EMAIL_USER, // Render Env-la Brevo Login ID irukkanum
+        pass: process.env.EMAIL_PASS  // Render Env-la Brevo Password irukkanum
     }
 });
 
@@ -85,8 +85,8 @@ createAdminAccount();
 
 // --- API ROUTES ---
 
-// 1. SEND OTP ROUTE (INSTANT DEMO VERSION ⚡)
-// (Mail anuppa try pannum, mudiyalana logs la kaattum)
+// 1. SEND OTP ROUTE (STRICT REAL MODE 📧)
+// Email ponal mattum dhaan Success varum!
 app.post('/api/send-otp', async (req, res) => {
     const { email } = req.body;
     console.log(`📨 Requesting OTP for: ${email}`);
@@ -100,52 +100,50 @@ app.post('/api/send-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStore[email] = otp; 
 
-        // Log OTP for easy access
-        console.log("========================================");
-        console.log(`🔑 BYPASS OTP for ${email}: ${otp}`);
-        console.log("========================================");
+        // Log pannuvom (just for server checking)
+        console.log(`🔑 Generated OTP for ${email}: ${otp}`);
 
         const mailOptions = {
             from: `MethaKadai Support <kishorjj05@gmail.com>`, // Un Real Email
             to: email,
             subject: 'Your OTP for MethaKadai Signup',
-            text: `Mapla! Un account create panna OTP idho: ${otp}. Be safe!`
+            text: `Mapla! Un account create panna OTP idho: ${otp}. Do not share this!`
         };
 
-        try {
-            await transporter.sendMail(mailOptions);
-            console.log(`✅ Mail Sent Successfully to ${email}`);
-        } catch (mailError) {
-            console.error("⚠️ Mail Failed (Network Issue), but OTP generated in Logs.");
-        }
-
-        // Always return success so user can enter OTP from logs if mail fails
-        res.json({ message: "OTP Generated! (Check Email or Server Logs) 📧" });
+        // 👇 STRICT SENDING: Await pannu, error vandha catch pannu.
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Mail Sent Successfully to ${email}`);
+        
+        res.json({ message: "OTP Sent to your Email! 📧" });
 
     } catch (error) {
-        console.error("❌ Error:", error);
-        res.status(500).json({ message: "Server Error" });
+        console.error("❌ Mail Error:", error);
+        // Error vandha client-ku "Fail" nu solli anuppurom
+        res.status(500).json({ message: "Email Anuppa Mudiyala! (Network/Brevo Issue)" });
     }
 });
 
-// 2. SIGNUP API (MASTER KEY ADDED 🔓)
+// 2. SIGNUP API (STRICT VERIFICATION 🔒)
+// 123456 lam vela seiyadhu. Real OTP dhaan venum.
 app.post('/api/signup', async (req, res) => {
     const { username, email, password, otp } = req.body;
 
-    // Check OTP (Master Key: 123456)
-    if (otp === "123456") {
-        console.log("🔓 Master OTP Used! Skipping verification...");
-    } 
-    else if (!otpStore[email] || otpStore[email] !== otp) {
-        return res.status(400).json({ message: "Thappana OTP Mapla! Check pannu." });
+    console.log(`Trying Signup: ${email} with OTP: ${otp}`);
+
+    // Check if OTP matches exactly
+    if (!otpStore[email] || otpStore[email] !== otp) {
+        return res.status(400).json({ message: "Thappana OTP Mapla! Correct-a podu." });
     }
 
     try {
         const newUser = new User({ username, email, password });
         await newUser.save();
-        delete otpStore[email]; 
+        
+        delete otpStore[email]; // OTP used, delete it.
         res.status(201).json({ message: "Account Created Successfully! 🎉" });
-    } catch (error) { res.status(500).json({ message: "Server Error" }); }
+    } catch (error) { 
+        res.status(500).json({ message: "Server Error" }); 
+    }
 });
 
 // GET PRODUCTS
