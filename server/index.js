@@ -30,17 +30,16 @@ mongoose.connect(MONGO_URI)
 // --- MAIL CONFIGURATION (FINAL ATTEMPT: PORT 2525) 📧 ---
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 2525,              // 👈 587 work aagalana, 2525 KANDIPPA WORK AAGUM!
-    secure: false,           // 2525 ku False dhaan
+    port: 2525,              // 👈 Port 2525 (Cloud Friendly)
+    secure: false,           
     auth: {
-        user: process.env.EMAIL_USER, // Render Env-la Brevo Login ID
-        pass: process.env.EMAIL_PASS  // Render Env-la Brevo Password
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS  
     },
-    // Connection settings
     tls: {
         rejectUnauthorized: false
     },
-    connectionTimeout: 10000 // 10 seconds wait time
+    connectionTimeout: 10000 
 });
 
 let otpStore = {}; 
@@ -90,8 +89,7 @@ createAdminAccount();
 
 // --- API ROUTES ---
 
-// 1. SEND OTP ROUTE (STRICT REAL MODE 📧)
-// Email ponal mattum dhaan Success varum!
+// 1. SEND OTP ROUTE (STRICT REAL MODE + PRO DESIGN 📧)
 app.post('/api/send-otp', async (req, res) => {
     const { email } = req.body;
     console.log(`📨 Requesting OTP for: ${email}`);
@@ -105,17 +103,40 @@ app.post('/api/send-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStore[email] = otp; 
 
-        // Log pannuvom (just for server checking)
         console.log(`🔑 Generated OTP for ${email}: ${otp}`);
 
+        // 👇 PROFESSIONAL EMAIL DESIGN (Correct Location) 👇
         const mailOptions = {
-            from: `MethaKadai Support <kishorjj05@gmail.com>`, // Un Real Email
+            from: `"MethaKadai Security" <kishorjj05@gmail.com>`, 
             to: email,
-            subject: 'Your OTP for MethaKadai Signup',
-            text: `Mapla! Un account create panna OTP idho: ${otp}. Do not share this!`
+            subject: '🔐 Your MethaKadai Verification Code', 
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #f9f9f9;">
+                <div style="text-align: center; border-bottom: 2px solid #ff9900; padding-bottom: 10px;">
+                    <h2 style="color: #333; margin: 0;">MethaKadai 🛋️</h2>
+                    <p style="color: #666; font-size: 14px; margin-top: 5px;">Comfort Delivered to Your Doorstep</p>
+                </div>
+                
+                <div style="padding: 20px 0; text-align: center;">
+                    <p style="font-size: 16px; color: #555;">Hello,</p>
+                    <p style="font-size: 16px; color: #555;">Thank you for registering with MethaKadai. Please use the following OTP to complete your sign-up procedures.</p>
+                    
+                    <div style="background-color: #fff; border: 1px dashed #ff9900; padding: 15px; display: inline-block; margin: 20px 0; border-radius: 5px;">
+                        <span style="font-size: 24px; font-weight: bold; color: #333; letter-spacing: 5px;">${otp}</span>
+                    </div>
+                    
+                    <p style="font-size: 14px; color: #999;">This OTP is valid for 10 minutes. Do not share this code with anyone.</p>
+                </div>
+
+                <div style="border-top: 1px solid #e0e0e0; padding-top: 15px; text-align: center;">
+                    <p style="font-size: 12px; color: #aaa;">&copy; 2025 MethaKadai. All rights reserved.</p>
+                    <p style="font-size: 12px; color: #aaa;">Salem, Tamil Nadu, India.</p>
+                </div>
+            </div>
+            `
         };
 
-        // 👇 STRICT SENDING: Await pannu, error vandha catch pannu.
+        // Send Mail
         await transporter.sendMail(mailOptions);
         console.log(`✅ Mail Sent Successfully to ${email}`);
         
@@ -123,19 +144,15 @@ app.post('/api/send-otp', async (req, res) => {
 
     } catch (error) {
         console.error("❌ Mail Error:", error);
-        // Error vandha client-ku "Fail" nu solli anuppurom
         res.status(500).json({ message: "Email Anuppa Mudiyala! (Network/Brevo Issue)" });
     }
 });
 
-// 2. SIGNUP API (STRICT VERIFICATION 🔒)
-// 123456 lam vela seiyadhu. Real OTP dhaan venum.
+// 2. SIGNUP API
 app.post('/api/signup', async (req, res) => {
     const { username, email, password, otp } = req.body;
-
     console.log(`Trying Signup: ${email} with OTP: ${otp}`);
 
-    // Check if OTP matches exactly
     if (!otpStore[email] || otpStore[email] !== otp) {
         return res.status(400).json({ message: "Thappana OTP Mapla! Correct-a podu." });
     }
@@ -143,8 +160,7 @@ app.post('/api/signup', async (req, res) => {
     try {
         const newUser = new User({ username, email, password });
         await newUser.save();
-        
-        delete otpStore[email]; // OTP used, delete it.
+        delete otpStore[email]; 
         res.status(201).json({ message: "Account Created Successfully! 🎉" });
     } catch (error) { 
         res.status(500).json({ message: "Server Error" }); 
@@ -228,7 +244,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
     try { const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: status }, { new: true }); res.json(updatedOrder); } catch (error) { res.status(500).json({ message: "Status update fail!" }); }
 });
 
-// PUT: Cancel Order (User Side) ❌
+// PUT: Cancel Order (User Side)
 app.put('/api/orders/:id/cancel', async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
