@@ -36,7 +36,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-let otpStore = {}; 
+let otpStore = {};
 
 // --- SCHEMAS ---
 
