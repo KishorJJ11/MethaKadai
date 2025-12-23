@@ -4,6 +4,11 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 require('dotenv').config(); // 👈 Idhu dhaan .env file-a padikkum!
 
+const express = require('express');
+const dns = require('node:dns'); // 👈 Puthusa add pannu
+dns.setDefaultResultOrder('ipv4first'); // 👈 Idhu dhaan mukkiyam! (Forces IPv4)
+// ... mattha imports ...
+
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -26,20 +31,15 @@ mongoose.connect(MONGO_URI)
 
 
 // --- MAIL CONFIGURATION (RENDER FIXED VERSION) 🛠️ ---
+// --- MAIL CONFIGURATION (DEBUG MODE) ---
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,              // 👈 BACK TO 587 (Idhu dhaan Cloud la reliable)
-    secure: false,          // 👈 587 ku idhu FALSE dhaan irukkanum!
-    requireTLS: true,       // 👈 Kandippa TLS use pannu nu solrom
+    service: 'gmail', // 'service' shortcut use pannalam, IPv4 fix pannadhal work aaganum
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    tls: {
-        // Idhu dhaan 'Magic Fix'. Self-signed certs ah allow pannum.
-        ciphers: "SSLv3",
-        rejectUnauthorized: false
-    }
+    logger: true, // 👈 Log la ella details um varum
+    debug: true   // 👈 Network traffic ah kaattum
 });
 
 let otpStore = {}; 
@@ -115,6 +115,11 @@ createAdminAccount();
 app.post('/api/send-otp', async (req, res) => {
     const { email } = req.body;
     console.log(`📨 Trying to send OTP to: ${email}`); 
+
+    console.log("🔑 Checking Credentials:", {
+        User: process.env.EMAIL_USER ? "Irukku ✅" : "Kaanom ❌",
+        Pass: process.env.EMAIL_PASS ? "Irukku ✅" : "Kaanom ❌"
+    });
 
     try {
         const existingUser = await User.findOne({ email });
