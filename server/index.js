@@ -43,7 +43,7 @@ let otpStore = {};
 
 // 1. Product Schema
 const productSchema = new mongoose.Schema({
-    name: String, price: Number, size: String, material: String, warranty: String, image: String, description: String
+    name: String, price: Number, size: String, material: String, warranty: String, image: [String], description: String
 });
 const Product = mongoose.model('Product', productSchema);
 
@@ -145,6 +145,27 @@ app.get('/api/products', async (req, res) => {
 
 app.get('/api/products/:id', async (req, res) => {
     try { const product = await Product.findById(req.params.id); if (!product) return res.status(404).json({ message: "Product Kidaikkala" }); res.json(product); } catch (error) { res.status(500).json({ message: "Server Error" }); }
+});
+
+// POST: Create New Product (Idhu dhaan miss aachu!)
+app.post('/api/products', async (req, res) => {
+    try {
+        const newProduct = new Product(req.body); // Frontend la irunthu varura data va edu
+        await newProduct.save(); // Database la save pannu
+        res.status(201).json({ message: "Product Added Successfully! ✅", product: newProduct });
+    } catch (error) {
+        res.status(500).json({ message: "Product add panna mudiyala!" });
+    }
+});
+
+// DELETE: Remove Product (Indha code-a pudhusa serthu vidu)
+app.delete('/api/products/:id', async (req, res) => {
+    try {
+        await Product.findByIdAndDelete(req.params.id);
+        res.json({ message: "Product Deleted Successfully! 🗑️" });
+    } catch (error) {
+        res.status(500).json({ message: "Delete panna mudiyala!" });
+    }
 });
 
 // USER
