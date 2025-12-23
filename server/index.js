@@ -28,14 +28,13 @@ mongoose.connect(MONGO_URI)
 
 
 // --- MAIL CONFIGURATION (FINAL FIX) 📧 ---
-// --- MAIL CONFIGURATION (BREVO SMTP) 🚀 ---
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com', // 👈 Gmail illa, ippo Brevo!
-    port: 587,
-    secure: false, // Brevo requires false for 587
+    host: 'smtp-relay.brevo.com',  // 👈 Screenshot la irukkura Server
+    port: 587,                     // 👈 Screenshot la irukkura Port
+    secure: false,                 // Port 587 requires false
     auth: {
-        user: process.env.EMAIL_USER, // Render Env la irundhu edukkum
-        pass: process.env.EMAIL_PASS  // Render Env la irundhu edukkum
+        user: process.env.EMAIL_USER, // Render la set panna 'Login' ID
+        pass: process.env.EMAIL_PASS  // Render la set panna 'Password'
     }
 });
 
@@ -120,14 +119,15 @@ app.post('/api/send-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStore[email] = otp; 
 
-        // 2. IMPORTANT: Log the OTP (Idhu dhaan Bypass!)
+        // 2. Log OTP (Backup ku irukkattum)
         console.log("========================================");
         console.log(`🔑 BYPASS OTP for ${email}: ${otp}`);
         console.log("========================================");
 
-        // 3. Email Anuppa Try Pannuvom (But error vandha kavalai illa)
+        // 3. Email Config (BREVO SETUP) 🚀
         const mailOptions = {
-            from: `MethaKadai Support <${process.env.EMAIL_USER}>`,
+            // 👇 INGA DHAAN MAATHIRUKKEN: Un Real Email podu!
+            from: 'MethaKadai Support <kishorjj05@gmail.com>', 
             to: email,
             subject: 'Your OTP for MethaKadai Signup',
             text: `Mapla! Un account create panna OTP idho: ${otp}. Be safe!`
@@ -137,11 +137,11 @@ app.post('/api/send-otp', async (req, res) => {
             await transporter.sendMail(mailOptions);
             console.log(`✅ Mail Sent Successfully to ${email}`);
         } catch (mailError) {
-            console.error("⚠️ Mail Failed (Network Issue), but OTP generated in Logs.");
-            // Email pogalanalum paravalla, namma 'Success' nu dhaan solla poren.
+            console.error("⚠️ Mail Failed:", mailError);
+            // Email fail aanalum OTP Logs la irukku, so user block aaga maattan.
         }
 
-        // 4. Client ku Success sollu
+        // 4. Success Response
         res.json({ message: "OTP Generated! (Check Email or Server Logs) 📧" });
 
     } catch (error) {
