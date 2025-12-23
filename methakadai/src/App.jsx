@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Routes, Route, useNavigate } from 'react-router-dom'; // 👈 BrowserRouter thevai illa inga
+import { Routes, Route, useNavigate } from 'react-router-dom'; 
 import { Toaster, toast } from 'react-hot-toast';
 
 import Navbar from './components/Navbar';
@@ -29,13 +29,23 @@ function App() {
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
 
-  const navigate = useNavigate(); // 👈 Ippo idhu work aagum! (Coz main.jsx la Router irukku)
+  const navigate = useNavigate();
+
+  // API URL
+  const API_URL = import.meta.env.VITE_API_URL || 'https://methakadai.onrender.com';
 
   useEffect(() => {
-    // API Call
-    axios.get('https://methakadai.onrender.com/api/products')
+    axios.get(`${API_URL}/api/products`)
       .then(response => setProducts(response.data))
       .catch(error => console.error("Error loading products:", error));
+  }, []);
+
+  // Reload pannalum User-a nyabagham vechukka:
+  useEffect(() => {
+    const storedUser = localStorage.getItem("methaUser"); // Check Storage
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser)); // Irundha, State la set pannu
+    }
   }, []);
 
   // --- CART LOGIC ---
@@ -98,37 +108,61 @@ function App() {
   };
 
   // --- AUTH LOGIC ---
-  const handleAuth = async (e) => {
+  // client/src/App.jsx
+
+const handleAuth = async (e) => {
     e.preventDefault();
+
+    // 1. Login Logic
     if (isLogin) {
+        console.log("🔵 Login Try Panrom...");
         try {
-            const res = await axios.post('https://methakadai.onrender.com/api/login', { email, password });
+            const res = await axios.post(`${API_URL}/api/login`, { email, password });
             toast.success(res.data.message);
             setCurrentUser(res.data.username);
+            localStorage.setItem("methaUser", JSON.stringify(res.data.username));
             setShowLogin(false);
         } catch (error) { toast.error(error.response?.data?.message || "Login Failed"); }
         return;
     }
+
+    // 2. Send OTP Logic (OTP Innum Anuppala na)
     if (!isOtpSent) {
+        console.log("🟡 OTP Anuppa Porom..."); // Debug Log
         try {
-            const res = await axios.post('https://methakadai.onrender.com/api/send-otp', { email });
+            const res = await axios.post(`${API_URL}/api/send-otp`, { email });
+            console.log("✅ OTP Sent Success:", res.data);
             toast.success(res.data.message);
-            setIsOtpSent(true);
-        } catch (error) { toast.error(error.response?.data?.message || "OTP Send Failed"); }
-    } else {
+            setIsOtpSent(true); // Success aana dhaan Next step ku pogum
+        } catch (error) { 
+            console.error("❌ OTP Error:", error);
+            toast.error(error.response?.data?.message || "Mail Anuppa Mudiyala!"); 
+        }
+    } 
+    
+    // 3. Signup Logic (OTP Anuppiyachu na)
+    else {
+        console.log("🟢 Verify & Signup Try Panrom..."); // Debug Log
         try {
-            const res = await axios.post('https://methakadai.onrender.com/api/signup', { username, email, password, otp });
+            const res = await axios.post(`${API_URL}/api/signup`, { username, email, password, otp });
             toast.success(res.data.message);
             setCurrentUser(username);
+            localStorage.setItem("methaUser", JSON.stringify(username));
             setShowLogin(false);
             setIsOtpSent(false);
             setOtp("");
-        } catch (error) { toast.error(error.response?.data?.message || "Invalid OTP"); }
+        } catch (error) { 
+            console.error("❌ Signup Error:", error);
+            toast.error(error.response?.data?.message || "Invalid OTP"); 
+        }
     }
-  };
+};
 
   const handleLogout = () => {
+    // 👇 CHANGE HERE
+    localStorage.removeItem("methaUser"); // 🗑️ Delete pannu
     setCurrentUser(null);
+    
     toast.success("Logout Successfully! 👋");
     navigate('/'); 
   }
@@ -164,7 +198,15 @@ function App() {
               </div>
 
               {!isLogin && isOtpSent && (
-                  <input type="text" placeholder="Enter OTP" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1'}} />
+                  <>
+                    <input type="text" placeholder="Enter OTP" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1'}} />
+                    
+                    {/* 👇 INDHA LINE-A SERTHUKKO MAPLA */}
+                    <p style={{fontSize: '12px', color: 'blue', cursor: 'pointer', textAlign: 'right', marginTop: '5px'}} 
+                      onClick={() => setIsOtpSent(false)}>
+                      Change Email / Resend OTP ↺
+                    </p>
+                  </>
               )}
               
               <button className="login-submit">
@@ -174,7 +216,11 @@ function App() {
 
             <p className="switch-text">
               {isLogin ? "New here? " : "Already have an account? "}
-              <span onClick={() => setIsLogin(!isLogin)}>
+              <span onClick={() => {
+                  setIsLogin(!isLogin);
+                  setIsOtpSent(false); // 👈 INDHA LINE MUKKIYAM! (Reset panrom)
+                  setOtp("");          // 👈 Pazhaya OTP irundha thodachidu
+              }}>
                 {isLogin ? "Create Account" : "Login"}
               </span>
             </p>
@@ -182,9 +228,7 @@ function App() {
         </div>
       )}
 
-      {/* ⚠️ MUKKIYAMANA CHANGE: 
-          Inga 'BrowserRouter' thevai illa, direct ah 'Routes' podu.
-      */}
+      {/* Routes */}
       <Routes>
         <Route path="/" element={
             <>
@@ -198,11 +242,21 @@ function App() {
                     {products.map((product) => (
                         <div key={product._id} className="product-card">
                             <div onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
-                                {/* product.images[0] -> Array la irukkura First photo va edu */}
+                                
+                                {/*{/* --- DEBUG CODE START --- 
+                                <div style={{background: 'yellow', padding: '5px', fontSize: '10px', color: 'black'}}>
+                                  <strong>Debug Data:</strong> <br/>
+                                  Images Array: {JSON.stringify(product.images)} <br/>
+                                  Single Image: {product.image}
+                                </div>
+                                {/* --- DEBUG CODE END --- */}
+                                
                                 <img 
-                              src={product.images && product.images.length > 0 ? product.images[0] : (product.image || "https://via.placeholder.com/150")} 
-                              alt={product.name} 
-                            />
+                                  src={(product.images && product.images.length > 0) ? product.images[0] : "https://placehold.co/400"} 
+                                  alt={product.name} 
+                                  onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
+                                  style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                                />
                             </div>
                             <div className="card-details">
                                 <h3 onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>

@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+require('dotenv').config(); // 👈 Idhu dhaan .env file-a padikkum!
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -15,25 +16,24 @@ app.use(cors({
 }));
 
 
-// --- MONGODB CONNECTION (CLOUD URL ADDED) ☁️ ---
-
-// 👇👇 INGA PAARU MAPLA! 👇👇
-// Un username & password ah correct ah replace pannu. Example: kishor:mypassword123
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://KishorJJ:KishorJJ2005@cluster0.d1zekd4.mongodb.net/?appName=Cluster0';
+// --- MONGODB CONNECTION (SECURED 🔒) ---
+// Ippo password code-la illa, .env kulla irukku!
+const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI)
 .then(() => console.log("MongoDB Connected! 🔥"))
 .catch(err => console.error("MongoDB Error:", err));
 
 
-// --- MAIL CONFIGURATION (UPDATED FOR RENDER) 📧 ---
+// --- MAIL CONFIGURATION (SECURED 🔒) ---
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com", // Gmail server address
-    port: 465,              // Secure port
-    secure: true,           // Use SSL
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
-        user: 'kishorjj05@gmail.com',
-        pass: 'owea djde lrry mvaq' // Un App Password
+        user: process.env.EMAIL_USER, // 👈 .env lerndhu edukkom
+        pass: process.env.EMAIL_PASS  // 👈 .env lerndhu edukkom
     }
 });
 
@@ -43,7 +43,14 @@ let otpStore = {};
 
 // 1. Product Schema
 const productSchema = new mongoose.Schema({
-    name: String, price: Number, size: String, material: String, warranty: String, image: [String], description: String
+    name: String, 
+    price: Number, 
+    size: String, 
+    material: String, 
+    warranty: String, 
+    images: [String], 
+    image: String,    
+    description: String
 });
 const Product = mongoose.model('Product', productSchema);
 
@@ -99,29 +106,36 @@ createAdminAccount();
 
 // --- API ROUTES ---
 
-// SEND OTP
+// SEND OTP ROUTE
 app.post('/api/send-otp', async (req, res) => {
     const { email } = req.body;
-    const existingUser = await User.findOne({ email });
-    if (existingUser) { return res.status(400).json({ message: "Indha email la already account irukku!" }); }
+    console.log(`📨 Trying to send OTP to: ${email}`); 
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore[email] = otp; 
-
-    const mailOptions = {
-        from: 'MethaKadai Support',
-        to: email,
-        subject: 'Your OTP for MethaKadai Signup',
-        text: `Mapla! Un account create panna OTP idho: ${otp}. Idha yaarkittayum sollatha!`
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Mail anuppa mudiyala!" });
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) { 
+            console.log("❌ User already exists");
+            return res.status(400).json({ message: "Indha email la already account irukku!" }); 
         }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        otpStore[email] = otp; 
+
+        const mailOptions = {
+            from: `MethaKadai Support <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Your OTP for MethaKadai Signup',
+            text: `Mapla! Un account create panna OTP idho: ${otp}. Be safe!`
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Mail Sent Successfully to ${email}`);
         res.json({ message: "OTP Sent to your Email! 📧" });
-    });
+
+    } catch (error) {
+        console.error("❌ Mail Error Mapla:", error);
+        res.status(500).json({ message: "Mail Server Error: Check Backend Logs" });
+    }
 });
 
 // SIGNUP
@@ -138,37 +152,80 @@ app.post('/api/signup', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Server Error" }); }
 });
 
-// PRODUCTS
+// GET ALL PRODUCTS
 app.get('/api/products', async (req, res) => {
     try { const products = await Product.find(); res.json(products); } catch (error) { res.status(500).json({ message: "Error" }); }
 });
 
+// GET SINGLE PRODUCT
 app.get('/api/products/:id', async (req, res) => {
     try { const product = await Product.findById(req.params.id); if (!product) return res.status(404).json({ message: "Product Kidaikkala" }); res.json(product); } catch (error) { res.status(500).json({ message: "Server Error" }); }
 });
 
-// POST: Create New Product (Idhu dhaan miss aachu!)
+// POST: Create New Product
 app.post('/api/products', async (req, res) => {
     try {
-        const newProduct = new Product(req.body); // Frontend la irunthu varura data va edu
-        await newProduct.save(); // Database la save pannu
+        console.log("📨 Data Vandhurchu Mapla:", req.body);
+
+        const { name, price, size, material, warranty, images, description } = req.body;
+
+        const newProduct = new Product({
+            name, 
+            price, 
+            size, 
+            material, 
+            warranty, 
+            images: images, 
+            image: (images && images.length > 0) ? images[0] : "", 
+            description
+        });
+
+        await newProduct.save();
+        console.log("✅ Database la Save Aagiduchu!");
+
         res.status(201).json({ message: "Product Added Successfully! ✅", product: newProduct });
     } catch (error) {
+        console.error("❌ Error Mapla:", error);
         res.status(500).json({ message: "Product add panna mudiyala!" });
     }
 });
 
-// DELETE: Remove Product (Indha code-a pudhusa serthu vidu)
+// PUT: Update Existing Product (EDIT)
+app.put('/api/products/:id', async (req, res) => {
+    try {
+        const { name, price, size, material, warranty, images, description } = req.body;
+
+        const updatedProduct = await Product.findByIdAndUpdate(
+            req.params.id, 
+            { 
+                name, price, size, material, warranty, 
+                images, 
+                image: (images && images.length > 0) ? images[0] : "",
+                description 
+            }, 
+            { new: true }
+        );
+
+        if (!updatedProduct) return res.status(404).json({ message: "Product Kaanom!" });
+        res.json({ message: "Product Updated Successfully! ✨", product: updatedProduct });
+
+    } catch (error) {
+        res.status(500).json({ message: "Update panna mudiyala mapla!" });
+    }
+});
+
+// DELETE: Remove Product
 app.delete('/api/products/:id', async (req, res) => {
     try {
-        await Product.findByIdAndDelete(req.params.id);
+        const deleted = await Product.findByIdAndDelete(req.params.id);
+        if(!deleted) return res.status(404).json({ message: "Product not found" });
         res.json({ message: "Product Deleted Successfully! 🗑️" });
     } catch (error) {
         res.status(500).json({ message: "Delete panna mudiyala!" });
     }
 });
 
-// USER
+// USER ROUTES
 app.get('/api/users/:username', async (req, res) => {
     try { const user = await User.findOne({ username: req.params.username }); if (!user) return res.status(404).json({ message: "User not found" }); res.json(user); } catch (error) { res.status(500).json({ message: "Server Error" }); }
 });
@@ -183,7 +240,7 @@ app.post('/api/login', async (req, res) => {
     try { const user = await User.findOne({ email }); if (!user || user.password !== password) { return res.status(400).json({ message: "Invalid Email or Password!" }); } res.json({ message: "Login Success!", username: user.username, email: user.email }); } catch (error) { res.status(500).json({ message: "Server Error" }); }
 });
 
-// ORDERS
+// ORDER ROUTES
 app.post('/api/orders', async (req, res) => {
     try { const newOrder = new Order(req.body); await newOrder.save(); res.status(201).json({ message: "Order Placed Successfully! 🎉" }); } catch (error) { res.status(500).json({ message: "Order podurathula problem!" }); }
 });
@@ -211,9 +268,28 @@ app.put('/api/orders/:id/status', async (req, res) => {
     }
 });
 
+// PUT: Cancel Order (User Side) ❌
+app.put('/api/orders/:id/cancel', async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ message: "Order Kaanom!" });
+
+        if (order.status === 'Shipped' || order.status === 'Delivered') {
+            return res.status(400).json({ message: "Order Shipped aayiduchu! Ini Cancel panna mudiyadhu." });
+        }
+
+        order.status = "Cancelled";
+        await order.save();
+        
+        res.json({ message: "Order Cancelled Successfully! ❌", order });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT} 🚀`);
 });
 
-module.exports = app; // 👈 Idhu Vercel ku mukkiyam
+module.exports = app;
