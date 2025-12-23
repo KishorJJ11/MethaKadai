@@ -27,15 +27,20 @@ mongoose.connect(MONGO_URI)
 .catch(err => console.error("MongoDB Error:", err));
 
 
-// --- MAIL CONFIGURATION (BREVO SMTP - REAL) 📧 ---
+// --- MAIL CONFIGURATION (FINAL ATTEMPT: PORT 2525) 📧 ---
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false, // Port 587 requires false
+    port: 2525,              // 👈 587 work aagalana, 2525 KANDIPPA WORK AAGUM!
+    secure: false,           // 2525 ku False dhaan
     auth: {
-        user: process.env.EMAIL_USER, // Render Env-la Brevo Login ID irukkanum
-        pass: process.env.EMAIL_PASS  // Render Env-la Brevo Password irukkanum
-    }
+        user: process.env.EMAIL_USER, // Render Env-la Brevo Login ID
+        pass: process.env.EMAIL_PASS  // Render Env-la Brevo Password
+    },
+    // Connection settings
+    tls: {
+        rejectUnauthorized: false
+    },
+    connectionTimeout: 10000 // 10 seconds wait time
 });
 
 let otpStore = {}; 
