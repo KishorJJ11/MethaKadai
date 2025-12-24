@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast'; 
 import '../Styles/AdminOrders.css'; 
 
 const AdminOrders = () => {
@@ -9,7 +10,7 @@ const AdminOrders = () => {
   // Edit State
   const [editId, setEditId] = useState(null);
   
-  // 👇 PUTHU STATE: VIEW ORDER DETAILS 
+  // View Order Details State
   const [selectedOrder, setSelectedOrder] = useState(null); 
 
   const [newProduct, setNewProduct] = useState({
@@ -19,7 +20,7 @@ const AdminOrders = () => {
 
   const [loading, setLoading] = useState(false);
   
-  // Use .env or fallback
+  // Smart API URL
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
@@ -30,15 +31,31 @@ const AdminOrders = () => {
   const fetchOrders = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/orders`);
-      setOrders(res.data);
-    } catch (err) { console.error("Error fetching orders:", err); }
+      // ✅ SAFETY CHECK: Only set if it's an array
+      if (Array.isArray(res.data)) {
+        setOrders(res.data);
+      } else {
+        setOrders([]);
+      }
+    } catch (err) { 
+        console.error("Error fetching orders:", err);
+        setOrders([]); // Safety Fallback
+    }
   };
 
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/products`);
-      setProducts(res.data);
-    } catch (err) { console.error("Error fetching products:", err); }
+      // ✅ SAFETY CHECK
+      if (Array.isArray(res.data)) {
+        setProducts(res.data);
+      } else {
+        setProducts([]);
+      }
+    } catch (err) { 
+        console.error("Error fetching products:", err);
+        setProducts([]); 
+    }
   };
 
   const handleChange = (e) => {
@@ -46,12 +63,14 @@ const AdminOrders = () => {
   };
 
   const deleteProduct = async (id) => {
-    if(!window.confirm("Delete pannidava?")) return;
+    if(!window.confirm("Are you sure you want to delete this product? This action cannot be undone.")) return;
     try {
       await axios.delete(`${API_URL}/api/products/${id}`);
-      alert("Product Deleted! 💥");
+      toast.success("Product deleted successfully");
       fetchProducts(); 
-    } catch (err) { alert("Delete fail!"); }
+    } catch (err) { 
+        toast.error("Failed to delete product"); 
+    }
   };
 
   const handleEdit = (product) => {
@@ -84,17 +103,17 @@ const AdminOrders = () => {
     try {
         if (editId) {
             await axios.put(`${API_URL}/api/products/${editId}`, productToSend);
-            alert('Product Updated Successfully! ✨');
+            toast.success('Product updated successfully');
             setEditId(null);
         } else {
             await axios.post(`${API_URL}/api/products`, productToSend);
-            alert('Product Added! 🔥');
+            toast.success('Product added successfully');
         }
         setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '' });
         fetchProducts();
     } catch (error) {
         console.error(error);
-        alert('Operation Failed');
+        toast.error('Operation failed. Please try again.');
     }
     setLoading(false);
   };
@@ -102,96 +121,125 @@ const AdminOrders = () => {
   const updateStatus = async (id, status) => {
     try {
       await axios.put(`${API_URL}/api/orders/${id}/status`, { status });
+      toast.success(`Order status updated to ${status}`);
       fetchOrders();
-    } catch (err) { alert("Status update failed"); }
+    } catch (err) { toast.error("Failed to update status"); }
   };
 
   return (
     <div className="admin-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
-      <h1>👑 Admin Dashboard</h1>
+      <h1>Admin Dashboard</h1>
 
       {/* --- SECTION 1: ADD / EDIT PRODUCT --- */}
-      <div className="add-product-section" style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px', marginBottom: '40px', border: editId ? '2px solid orange' : '1px solid #ddd' }}>
+      <div className="add-product-section" style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px', marginBottom: '40px', border: editId ? '2px solid #ffc107' : '1px solid #ddd' }}>
         
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-            <h2>{editId ? "✏️ Edit Product" : "➕ Add New Product"}</h2>
-            {editId && <button onClick={cancelEdit} style={{background: 'gray', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '5px'}}>Cancel Edit ❌</button>}
+            <h2>{editId ? "Edit Product" : "Add New Product"}</h2>
+            {editId && <button onClick={cancelEdit} style={{background: '#6c757d', color: 'white', border: 'none', padding: '5px 15px', cursor: 'pointer', borderRadius: '5px'}}>Cancel</button>}
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-          <input name="name" placeholder="Name" value={newProduct.name} onChange={handleChange} required style={{ padding: '10px' }} />
-          <input name="price" type="number" placeholder="Price" value={newProduct.price} onChange={handleChange} required style={{ padding: '10px' }} />
-          <input name="size" placeholder="Size" value={newProduct.size} onChange={handleChange} required style={{ padding: '10px' }} />
-          <input name="material" placeholder="Material" value={newProduct.material} onChange={handleChange} required style={{ padding: '10px' }} />
-          <input name="warranty" placeholder="Warranty" value={newProduct.warranty} onChange={handleChange} required style={{ padding: '10px' }} />
+          <input name="name" placeholder="Product Name" value={newProduct.name} onChange={handleChange} required style={{ padding: '10px' }} />
+          <input name="price" type="number" placeholder="Price (₹)" value={newProduct.price} onChange={handleChange} required style={{ padding: '10px' }} />
+          <input name="size" placeholder="Size (e.g., Queen 6x5)" value={newProduct.size} onChange={handleChange} required style={{ padding: '10px' }} />
+          <input name="material" placeholder="Material (e.g., Memory Foam)" value={newProduct.material} onChange={handleChange} required style={{ padding: '10px' }} />
+          <input name="warranty" placeholder="Warranty Duration" value={newProduct.warranty} onChange={handleChange} required style={{ padding: '10px' }} />
           <input name="images" placeholder="Image URLs (Comma separated)" value={newProduct.images} onChange={handleChange} required style={{ padding: '10px' }} />
-          <textarea name="description" placeholder="Description" value={newProduct.description} onChange={handleChange} style={{ gridColumn: 'span 2', padding: '10px', height: '80px' }} />
-          <button type="submit" disabled={loading} style={{ gridColumn: 'span 2', padding: '15px', background: editId ? 'orange' : '#28a745', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
-            {loading ? "Processing..." : (editId ? "Update Product ✨" : "🚀 Add Product Now")}
+          <textarea name="description" placeholder="Product Description" value={newProduct.description} onChange={handleChange} style={{ gridColumn: 'span 2', padding: '10px', height: '80px' }} />
+          
+          <button type="submit" disabled={loading} style={{ gridColumn: 'span 2', padding: '15px', background: editId ? '#ffc107' : '#28a745', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', borderRadius: '5px' }}>
+            {loading ? "Processing..." : (editId ? "Update Product" : "Add Product")}
           </button>
         </form>
       </div>
 
       {/* --- SECTION 2: PRODUCT LIST --- */}
       <div className="product-list" style={{ marginBottom: '40px' }}>
-        <h2>📦 Available Products ({products.length})</h2>
-        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '10px' }}>
-          {products.map(p => (
-            <div key={p._id} style={{ border: '1px solid #ddd', padding: '10px', minWidth: '200px', borderRadius: '5px' }}>
-              <img 
-                src={(p.images && p.images.length > 0) ? p.images[0] : (p.image || "https://placehold.co/400")}
-                onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
-                alt={p.name} 
-                style={{ width: '100%', height: '120px', objectFit: 'cover' }} 
-              />
-              <p><strong>{p.name}</strong></p>
-              <p>₹{p.price}</p>
-              <div style={{display: 'flex', gap: '5px', marginTop: '10px'}}>
-                  <button onClick={() => handleEdit(p)} style={{ flex: 1, padding: '8px', backgroundColor: 'orange', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Edit ✏️</button>
-                  <button onClick={() => deleteProduct(p._id)} style={{ flex: 1, padding: '8px', backgroundColor: '#ff4d4d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Delete 🗑️</button>
-              </div>
-            </div>
-          ))}
+        <h2>Available Products ({products.length})</h2>
+        <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', padding: '10px' }}>
+          
+          {/* ✅ FIXED: Added Safety Check for Products Map */}
+          {Array.isArray(products) && products.length > 0 ? (
+            products.map(p => (
+                <div key={p._id} style={{ border: '1px solid #ddd', padding: '15px', minWidth: '220px', borderRadius: '8px', background: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                <img 
+                    src={(p.images && p.images.length > 0) ? p.images[0] : (p.image || "https://placehold.co/400")}
+                    onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
+                    alt={p.name} 
+                    style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px' }} 
+                />
+                <p style={{fontSize: '16px', margin: '10px 0 5px'}}><strong>{p.name}</strong></p>
+                <p style={{color: '#555', margin: '0 0 10px'}}>₹{p.price.toLocaleString()}</p>
+                
+                <div style={{display: 'flex', gap: '10px'}}>
+                    <button onClick={() => handleEdit(p)} style={{ flex: 1, padding: '8px', backgroundColor: '#ffc107', color: 'black', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Edit</button>
+                    <button onClick={() => deleteProduct(p._id)} style={{ flex: 1, padding: '8px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
+                </div>
+                </div>
+            ))
+          ) : (
+            <p>No products available.</p>
+          )}
+
         </div>
       </div>
       
       {/* --- SECTION 3: ORDERS --- */}
       <div className="orders-section">
-        <h2>🚚 Recent Orders</h2>
-        {orders.length === 0 ? <p>Innum orders varala mapla...</p> : (
+        <h2>Recent Orders</h2>
+        
+        {/* ✅ FIXED: Added Safety Check for Orders Map */}
+        {!Array.isArray(orders) || orders.length === 0 ? (
+            <p style={{color: '#666', fontStyle: 'italic'}}>No orders found.</p>
+        ) : (
           <div className="table-responsive">
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <thead>
-              <tr style={{ background: '#333', color: 'white', width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-                <th style={{ padding: '10px' }}>Order ID</th>
-                <th>Customer</th>
-                <th>Items</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Action</th>
+              <tr style={{ background: '#343a40', color: 'white' }}>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Order ID</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Customer</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>Items</th>
+                <th style={{ padding: '12px', textAlign: 'right' }}>Amount</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>Status</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {orders.map(order => (
-                <tr key={order._id} style={{ borderBottom: '1px solid #ccc', textAlign: 'center' }}>
-                  <td style={{ padding: '10px' }}>{order._id.substring(0, 6)}...</td>
-                  <td>{order.name}</td>
-                  <td>{order.cartItems.length} Items</td>
-                  <td>₹{order.totalAmount}</td>
-                  <td style={{ fontWeight: 'bold', color: order.status === 'Delivered' ? 'green' : order.status === 'Cancelled' ? 'red' : order.status === 'Shipped' ? 'purple' : 'orange' }}>{order.status}</td>
-                  <td style={{display:'flex', justifyContent:'center', gap:'10px'}}>
-                    <select onChange={(e) => updateStatus(order._id, e.target.value)} value={order.status} style={{ padding: '5px' }}>
+                <tr key={order._id} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '12px' }}>#{order._id.substring(0, 6).toUpperCase()}</td>
+                  <td style={{ padding: '12px' }}>{order.name}</td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>{order.cartItems.length}</td>
+                  <td style={{ padding: '12px', textAlign: 'right' }}>₹{order.totalAmount.toLocaleString()}</td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <span style={{ 
+                          padding: '4px 8px', 
+                          borderRadius: '4px', 
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          color: 'white',
+                          background: order.status === 'Delivered' ? '#28a745' : order.status === 'Cancelled' ? '#dc3545' : order.status === 'Shipped' ? '#17a2b8' : '#ffc107' 
+                      }}>
+                          {order.status}
+                      </span>
+                  </td>
+                  <td style={{ padding: '12px', display:'flex', justifyContent:'center', gap:'10px'}}>
+                    <select 
+                        onChange={(e) => updateStatus(order._id, e.target.value)} 
+                        value={order.status} 
+                        style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ced4da' }}
+                    >
                       <option value="Ordered">Ordered</option>
                       <option value="Shipped">Shipped</option>
                       <option value="Delivered">Delivered</option>
+                      <option value="Cancelled">Cancelled</option>
                     </select>
                     
-                    {/* 👇 VIEW BUTTON */}
                     <button 
                         onClick={() => setSelectedOrder(order)} 
-                        style={{background: '#007bffd0', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer'}}
+                        style={{background: '#007bff', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '14px'}}
                     >
-                        View 👁️
+                        View
                     </button>
                   </td>
                 </tr>
@@ -206,50 +254,54 @@ const AdminOrders = () => {
       {selectedOrder && (
         <div style={{
             position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-            background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+            background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
         }}>
             <div style={{
-                background: 'white', padding: '20px', borderRadius: '10px', width: '90%', maxWidth: '500px', 
-                maxHeight: '80vh', overflowY: 'auto', position: 'relative'
+                background: 'white', padding: '25px', borderRadius: '8px', width: '90%', maxWidth: '500px', 
+                maxHeight: '85vh', overflowY: 'auto', position: 'relative', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
             }}>
                 <button 
                     onClick={() => setSelectedOrder(null)} 
-                    style={{position: 'absolute', top: '10px', right: '10px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer'}}
+                    style={{position: 'absolute', top: '15px', right: '15px', background: 'transparent', color: '#666', border: 'none', fontSize: '24px', cursor: 'pointer'}}
                 >
-                    ×
+                    &times;
                 </button>
                 
-                <h2 style={{borderBottom: '2px solid #ddd', paddingBottom: '10px'}}>📦 Order Details</h2>
+                <h2 style={{borderBottom: '1px solid #eee', paddingBottom: '15px', margin: '0 0 15px'}}>Order Details</h2>
                 
-                <div style={{marginTop: '15px'}}>
-                    <p><strong>Order ID:</strong> {selectedOrder._id}</p>
-                    <p><strong>Customer:</strong> {selectedOrder.name}</p>
+                <div style={{fontSize: '14px', lineHeight: '1.6'}}>
+                    <p><strong>Order ID:</strong> #{selectedOrder._id.toUpperCase()}</p>
+                    <p><strong>Customer Name:</strong> {selectedOrder.name}</p>
                     <p><strong>Phone:</strong> {selectedOrder.phone}</p>
                     <p><strong>Address:</strong> {selectedOrder.address}</p>
-                    <p><strong>Date:</strong> {new Date(selectedOrder.orderDate).toLocaleString()}</p>
-                    <p><strong>Payment:</strong> {selectedOrder.paymentMethod} {selectedOrder.transactionId && `(ID: ${selectedOrder.transactionId})`}</p>
+                    <p><strong>Ordered Date:</strong> {new Date(selectedOrder.orderDate).toLocaleString()}</p>
+                    <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod} {selectedOrder.transactionId && `(ID: ${selectedOrder.transactionId})`}</p>
                 </div>
 
-                <h3 style={{marginTop: '20px', background: '#eee', padding: '5px'}}>🛒 Purchased Items</h3>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px'}}>
+                <h3 style={{marginTop: '20px', background: '#f8f9fa', padding: '10px', fontSize: '16px', borderLeft: '4px solid #007bff'}}>Purchased Items</h3>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px'}}>
                     {selectedOrder.cartItems.map((item, index) => (
-                        <div key={index} style={{display: 'flex', gap: '10px', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>
+                        <div key={index} style={{display: 'flex', gap: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px'}}>
                             <img 
                                 src={(item.images && item.images.length > 0) ? item.images[0] : (item.image || "https://placehold.co/70")} 
                                 alt={item.name} 
-                                style={{width: '60px', height: '60px', objectFit: 'cover', borderRadius: '5px'}}
+                                style={{width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #eee'}}
                             />
-                            <div>
-                                <p style={{fontWeight: 'bold', margin: 0}}>{item.name}</p>
-                                <p style={{margin: 0, fontSize: '14px', color: '#555'}}>Qty: {item.quantity} | Size: {item.size}</p>
-                                <p style={{margin: 0, fontWeight: 'bold', color: 'green'}}>₹{item.price * item.quantity}</p>
+                            <div style={{flex: 1}}>
+                                <p style={{fontWeight: 'bold', margin: '0 0 5px'}}>{item.name}</p>
+                                <p style={{margin: 0, fontSize: '13px', color: '#666'}}>
+                                    Size: {item.size} | Qty: {item.quantity}
+                                </p>
+                            </div>
+                            <div style={{textAlign: 'right'}}>
+                                <p style={{margin: 0, fontWeight: 'bold'}}>₹{(item.price * item.quantity).toLocaleString()}</p>
                             </div>
                         </div>
                     ))}
                 </div>
 
-                <div style={{marginTop: '20px', textAlign: 'right', borderTop: '2px solid #ddd', paddingTop: '10px'}}>
-                    <h3>Total Amount: <span style={{color: 'green'}}>₹{selectedOrder.totalAmount}</span></h3>
+                <div style={{marginTop: '20px', textAlign: 'right', borderTop: '2px solid #eee', paddingTop: '15px'}}>
+                    <h3 style={{margin: 0}}>Total: <span style={{color: '#28a745'}}>₹{selectedOrder.totalAmount.toLocaleString()}</span></h3>
                 </div>
             </div>
         </div>

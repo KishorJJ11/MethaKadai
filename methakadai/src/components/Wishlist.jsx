@@ -8,32 +8,33 @@ function Wishlist({ wishlist, addToCart, removeFromWishlist }) {
   return (
     <div className="wishlist-container">
       
-      {/* 1. MELA IRUKKURA BACK BUTTON */}
+      {/* Navigation Button */}
       <button className="back-btn-top" onClick={() => navigate('/')}>
         ← Continue Shopping
       </button>
 
-      <h2>Unnudaya Wishlist ❤️</h2>
+      <h2>My Wishlist</h2>
 
       {wishlist.length === 0 ? (
         <div className="empty-wishlist">
-          <p>Wishlist kaali ah irukku! Putha ethavathu pudichurukka nu paarunga.</p>
+          <p>Your wishlist is currently empty. Explore our collections to add your favorite items.</p>
           
-          {/* 2. EMPTY STATE BUTTON */}
           <button className="start-shop-btn" onClick={() => navigate('/')}>
-            Start Shopping
+            Browse Collections
           </button>
         </div>
       ) : (
         <div className="wishlist-grid">
           {wishlist.map((product) => (
             <div key={product._id} className="wishlist-card">
-              {/* Image Click panna Product Page pogum */}
+              
+              {/* Professional Image Handling with Fallback */}
               <img 
-                src={product.image} 
+                src={(product.images && product.images.length > 0) ? product.images[0] : (product.image || "https://placehold.co/400")} 
                 alt={product.name} 
                 onClick={() => navigate(`/product/${product._id}`)}
-                style={{cursor: 'pointer'}}
+                onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
+                style={{cursor: 'pointer', width: '100%', height: '200px', objectFit: 'cover'}}
               />
               
               <div className="wishlist-details">
@@ -50,14 +51,14 @@ function Wishlist({ wishlist, addToCart, removeFromWishlist }) {
                         removeFromWishlist(product._id); 
                     }}
                   >
-                    Move to Cart 🛒
+                    Move to Cart
                   </button>
                   
                   <button 
                     className="remove-btn" 
                     onClick={() => removeFromWishlist(product._id)}
                   >
-                    Remove ❌
+                    Remove
                   </button>
                 </div>
               </div>

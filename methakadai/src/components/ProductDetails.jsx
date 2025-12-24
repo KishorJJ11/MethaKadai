@@ -1,117 +1,162 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
 import '../Styles/ProductDetails.css';
 
 const ProductDetails = ({ addToCart }) => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [mainImage, setMainImage] = useState(""); 
   const [error, setError] = useState(false);
   
-  // API URL logic
-  const API_URL = import.meta.env.VITE_API_URL || 'https://methakadai.onrender.com';
+  // Smart API URL
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     axios.get(`${API_URL}/api/products/${id}`)
       .then(res => {
         setProduct(res.data);
-        // Data vandha udane, Mudhal photo-va main image ah set panrom
+        
+        // Handle Main Image Logic
         if(res.data.images && res.data.images.length > 0) {
             setMainImage(res.data.images[0]); 
         } else if (res.data.image) {
-            setMainImage(res.data.image); // Pazhaya data support
+            setMainImage(res.data.image); // Fallback for legacy data
         } else {
-            // 👇 CHANGE 1: URL Maathiyachu
             setMainImage("https://placehold.co/400"); 
         }
       })
-      .catch(err => 
-        {console.error(err);
-      setError(true);
+      .catch(err => {
+        console.error("Error fetching product details:", err);
+        setError(true);
       });
-}, [id]);
+  }, [id, API_URL]);
 
-  // Loading ku mela idhai podu
   if (error) return (
-      <div style={{textAlign:'center', marginTop:'50px'}}>
-          <h2>Ayyo! Indha Sarakku Ippo Illa! 😕</h2>
-          <p>Product delete aagirukkalam allathu stock illama poyirukkalam.</p>
-          <a href="/" style={{color: 'blue'}}>🏠 Go Home</a>
+      <div style={{textAlign:'center', marginTop:'80px', color: '#555'}}>
+          <h2 style={{fontSize: '2rem', marginBottom: '10px'}}>Product Not Found</h2>
+          <p style={{marginBottom: '20px'}}>This product may have been removed or is currently unavailable.</p>
+          <button 
+            onClick={() => navigate('/')} 
+            style={{background: 'black', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer'}}
+          >
+            Back to Home
+          </button>
       </div>
   );
 
-  if (!product) return <div style={{textAlign:'center', marginTop:'50px'}}>Loading Sarakku... 🔄</div>;
+  if (!product) return (
+    <div style={{textAlign:'center', marginTop:'80px', fontSize: '1.2rem', color: '#666'}}>
+        Loading product details...
+    </div>
+  );
 
   return (
-    <div className="product-details-container" style={{ padding: '40px', maxWidth: '1000px', margin: '0 auto', display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
+    <div className="product-details-container" style={{ padding: '40px', maxWidth: '1100px', margin: '0 auto', display: 'flex', gap: '50px', flexWrap: 'wrap' }}>
       <Toaster />
       
-      {/* --- LEFT SIDE: IMAGE GALLERY 🖼️ --- */}
-      <div className="image-section" style={{ flex: '1', minWidth: '300px' }}>
+      {/* --- LEFT SIDE: IMAGE GALLERY --- */}
+      <div className="image-section" style={{ flex: '1', minWidth: '350px' }}>
         
-        {/* Main Image (Perusa theriyum) */}
-        <div style={{ border: '1px solid #ddd', borderRadius: '10px', overflow: 'hidden', marginBottom: '10px' }}>
+        {/* Main Image */}
+        <div style={{ border: '1px solid #eee', borderRadius: '8px', overflow: 'hidden', marginBottom: '15px' }}>
             <img 
                 src={mainImage} 
                 alt={product.name} 
-                // 👇 CHANGE 2: Loop Stop logic + Puthu URL
                 onError={(e) => { 
-                    e.target.onerror = null; // 🛑 STOP LOOP
-                    e.target.src = "https://placehold.co/400"; // Backup Image
+                    e.target.onerror = null; 
+                    e.target.src = "https://placehold.co/400"; 
                 }}
-                style={{ width: '100%', height: '400px', objectFit: 'cover' }} 
+                style={{ width: '100%', height: '450px', objectFit: 'cover' }} 
             />
         </div>
 
-        {/* Small Images (Keela chinna box la varum) */}
-        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto' }}>
+        {/* Thumbnails */}
+        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
             {product.images && product.images.length > 0 ? (
                 product.images.map((img, index) => (
                     <img 
                         key={index} 
                         src={img} 
-                        alt={`thumb-${index}`} 
-                        onClick={() => setMainImage(img)} // Click panna Main Image maarum
-                        // 👇 CHANGE 3: Thumbnails kum safety add pannidalam
+                        alt={`thumbnail-${index}`} 
+                        onClick={() => setMainImage(img)} 
                         onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/70"; }}
                         style={{ 
-                            width: '70px', 
-                            height: '70px', 
+                            width: '80px', 
+                            height: '80px', 
                             objectFit: 'cover', 
-                            borderRadius: '5px', 
+                            borderRadius: '4px', 
                             cursor: 'pointer',
-                            border: mainImage === img ? '2px solid green' : '1px solid #ccc' 
+                            border: mainImage === img ? '2px solid black' : '1px solid #e0e0e0',
+                            opacity: mainImage === img ? 1 : 0.7,
+                            transition: 'all 0.2s'
                         }} 
+                        onMouseOver={(e) => e.target.style.opacity = 1}
+                        onMouseOut={(e) => e.target.style.opacity = mainImage === img ? 1 : 0.7}
                     />
                 ))
             ) : (
-                // Images illana oru dummy thumbnail kaattu
-                <img src={mainImage} alt="thumb" style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #ccc' }} />
+                <img src={mainImage} alt="thumbnail" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e0e0e0' }} />
             )}
         </div>
       </div>
 
-      {/* --- RIGHT SIDE: DETAILS 📝 --- */}
-      <div className="details-section" style={{ flex: '1', minWidth: '300px' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{product.name}</h1>
-        <p style={{ fontSize: '1.5rem', color: '#28a745', fontWeight: 'bold' }}>₹{product.price.toLocaleString()}</p>
+      {/* --- RIGHT SIDE: DETAILS --- */}
+      <div className="details-section" style={{ flex: '1', minWidth: '350px' }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '15px', lineHeight: '1.2' }}>{product.name}</h1>
+        <p style={{ fontSize: '1.8rem', color: '#333', fontWeight: 'bold', marginBottom: '20px' }}>₹{product.price.toLocaleString()}</p>
         
-        <div style={{ margin: '20px 0', lineHeight: '1.6', color: '#555' }}>
+        <div style={{ margin: '20px 0', lineHeight: '1.8', color: '#555', borderTop: '1px solid #eee', borderBottom: '1px solid #eee', padding: '20px 0' }}>
             <p><strong>Size:</strong> {product.size}</p>
             <p><strong>Material:</strong> {product.material}</p>
             <p><strong>Warranty:</strong> {product.warranty}</p>
-            <p style={{ marginTop: '10px' }}>{product.description}</p>
+            <p style={{ marginTop: '15px' }}>{product.description}</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '15px' }}>
+        <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
             <button 
                 onClick={() => addToCart(product)} 
-                style={{ padding: '15px 30px', background: 'black', color: 'white', border: 'none', cursor: 'pointer', fontSize: '1.1rem', borderRadius: '5px' }}>
-                Add to Cart 🛒
+                style={{ 
+                    flex: 2,
+                    padding: '15px', 
+                    background: 'black', 
+                    color: 'white', 
+                    border: 'none', 
+                    cursor: 'pointer', 
+                    fontSize: '1rem', 
+                    borderRadius: '4px',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px'
+                }}>
+                Add to Cart
             </button>
-            <button style={{ padding: '15px', background: 'white', border: '1px solid #ccc', borderRadius: '5px', cursor: 'pointer', fontSize: '1.2rem' }}>❤️</button>
+            <button 
+                style={{ 
+                    flex: 1,
+                    padding: '15px', 
+                    background: 'white', 
+                    color: 'black',
+                    border: '1px solid black', 
+                    borderRadius: '4px', 
+                    cursor: 'pointer', 
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px'
+                }}
+                onClick={() => toast.success("Added to Wishlist")}
+            >
+                Wishlist
+            </button>
+        </div>
+        
+        <div style={{marginTop: '20px', fontSize: '0.9rem', color: '#777'}}>
+            <p>✓ Free Delivery available</p>
+            <p>✓ 7 Days Return Policy</p>
+            <p>✓ Cash on Delivery available</p>
         </div>
       </div>
     </div>

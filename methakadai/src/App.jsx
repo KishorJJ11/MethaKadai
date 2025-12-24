@@ -21,7 +21,7 @@ function App() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   
-  // Auth States
+  // Authentication States
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,27 +31,41 @@ function App() {
 
   const navigate = useNavigate();
 
-  // API URL
-  const API_URL = import.meta.env.VITE_API_URL || 'https://methakadai.onrender.com';
+  // API URL Configuration (Local vs Production)
+  const API_URL = import.meta.env.DEV 
+    ? "http://localhost:5000" 
+    : "https://methakadai.onrender.com"; 
 
+  // Fetch Products with Safety Checks
   useEffect(() => {
     axios.get(`${API_URL}/api/products`)
-      .then(response => setProducts(response.data))
-      .catch(error => console.error("Error loading products:", error));
-  }, []);
+      .then(response => {
+        if (Array.isArray(response.data)) {
+            setProducts(response.data);
+        } else if (response.data.products && Array.isArray(response.data.products)) {
+            setProducts(response.data.products);
+        } else {
+            setProducts([]);
+        }
+      })
+      .catch(error => {
+        console.error("Error loading products:", error);
+        setProducts([]); 
+      });
+  }, [API_URL]);
 
-  // Reload pannalum User-a nyabagham vechukka:
+  // Persistent User Session
   useEffect(() => {
-    const storedUser = localStorage.getItem("methaUser"); // Check Storage
+    const storedUser = localStorage.getItem("methaUser"); 
     if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser)); // Irundha, State la set pannu
+      setCurrentUser(JSON.parse(storedUser)); 
     }
   }, []);
 
   // --- CART LOGIC ---
   const addToCart = (product) => {
     if (!currentUser) {
-        toast.error("Please Login to add items to Cart! 🛒");
+        toast.error("Please login to add items to your cart.");
         setShowLogin(true);
         return;
     }
@@ -60,10 +74,10 @@ function App() {
         setCart(cart.map(item => 
             item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
         ));
-        toast.success(`Quantity updated for ${product.name}! 🔄`);
+        toast.success(`Updated quantity for ${product.name}`);
     } else {
         setCart([...cart, { ...product, quantity: 1 }]);
-        toast.success(`${product.name} Added to Cart! 🛒`);
+        toast.success(`${product.name} added to cart`);
     }
   };
 
@@ -80,7 +94,7 @@ function App() {
   const removeFromCart = (indexToRemove) => {
     const newCart = cart.filter((_, index) => index !== indexToRemove);
     setCart(newCart);
-    toast.success("Item removed from Cart!");
+    toast.success("Item removed from cart");
   };
 
   const clearCart = () => { setCart([]); };
@@ -88,61 +102,51 @@ function App() {
   // --- WISHLIST LOGIC ---
   const addToWishlist = (product) => {
     if (!currentUser) {
-        toast.error("Login to use Wishlist! ❤️");
+        toast.error("Please login to manage your wishlist.");
         setShowLogin(true);
         return;
     }
     const exists = wishlist.find(item => item._id === product._id);
     if (exists) { 
-        toast("Already in Wishlist!", { icon: 'ℹ️' });
+        toast("Item already in wishlist");
     } else { 
         setWishlist([...wishlist, product]); 
-        toast.success("Added to Wishlist ❤️"); 
+        toast.success("Added to wishlist"); 
     }
   };
 
   const removeFromWishlist = (productId) => {
     const newWishlist = wishlist.filter((item) => item._id !== productId);
     setWishlist(newWishlist);
-    toast.success("Removed from Wishlist");
+    toast.success("Removed from wishlist");
   };
 
-  // --- AUTH LOGIC ---
-  // client/src/App.jsx
-
-const handleAuth = async (e) => {
+  // --- AUTHENTICATION LOGIC ---
+  const handleAuth = async (e) => {
     e.preventDefault();
 
-    // 1. Login Logic
     if (isLogin) {
-        console.log("🔵 Login Try Panrom...");
         try {
             const res = await axios.post(`${API_URL}/api/login`, { email, password });
             toast.success(res.data.message);
             setCurrentUser(res.data.username);
             localStorage.setItem("methaUser", JSON.stringify(res.data.username));
             setShowLogin(false);
-        } catch (error) { toast.error(error.response?.data?.message || "Login Failed"); }
+        } catch (error) { 
+            toast.error(error.response?.data?.message || "Login failed"); 
+        }
         return;
     }
 
-    // 2. Send OTP Logic (OTP Innum Anuppala na)
     if (!isOtpSent) {
-        console.log("🟡 OTP Anuppa Porom..."); // Debug Log
         try {
             const res = await axios.post(`${API_URL}/api/send-otp`, { email });
-            console.log("✅ OTP Sent Success:", res.data);
             toast.success(res.data.message);
-            setIsOtpSent(true); // Success aana dhaan Next step ku pogum
+            setIsOtpSent(true); 
         } catch (error) { 
-            console.error("❌ OTP Error:", error);
-            toast.error(error.response?.data?.message || "Mail Anuppa Mudiyala!"); 
+            toast.error(error.response?.data?.message || "Failed to send verification email."); 
         }
-    } 
-    
-    // 3. Signup Logic (OTP Anuppiyachu na)
-    else {
-        console.log("🟢 Verify & Signup Try Panrom..."); // Debug Log
+    } else {
         try {
             const res = await axios.post(`${API_URL}/api/signup`, { username, email, password, otp });
             toast.success(res.data.message);
@@ -152,18 +156,15 @@ const handleAuth = async (e) => {
             setIsOtpSent(false);
             setOtp("");
         } catch (error) { 
-            console.error("❌ Signup Error:", error);
-            toast.error(error.response?.data?.message || "Invalid OTP"); 
+            toast.error(error.response?.data?.message || "Invalid verification code."); 
         }
     }
-};
+  };
 
   const handleLogout = () => {
-    // 👇 CHANGE HERE
-    localStorage.removeItem("methaUser"); // 🗑️ Delete pannu
+    localStorage.removeItem("methaUser"); 
     setCurrentUser(null);
-    
-    toast.success("Logout Successfully! 👋");
+    toast.success("Logged out successfully");
     navigate('/'); 
   }
 
@@ -179,12 +180,12 @@ const handleAuth = async (e) => {
         handleLogout={handleLogout}
       /> 
 
-      {/* Login Modal */}
+      {/* Authentication Modal */}
       {showLogin && (
         <div className="login-overlay" onClick={() => setShowLogin(false)}>
           <div className="login-box" onClick={(e) => e.stopPropagation()}>
             <button className="close-x-btn" onClick={() => setShowLogin(false)}>×</button>
-            <h2>{isLogin ? 'Welcome Back! 👋' : 'Create Account 🚀'}</h2>
+            <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
             
             <form onSubmit={handleAuth}>
               {!isLogin && (
@@ -199,27 +200,25 @@ const handleAuth = async (e) => {
 
               {!isLogin && isOtpSent && (
                   <>
-                    <input type="text" placeholder="Enter OTP" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1'}} />
-                    
-                    {/* 👇 INDHA LINE-A SERTHUKKO MAPLA */}
+                    <input type="text" placeholder="Verification Code" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1'}} />
                     <p style={{fontSize: '12px', color: 'blue', cursor: 'pointer', textAlign: 'right', marginTop: '5px'}} 
                       onClick={() => setIsOtpSent(false)}>
-                      Change Email / Resend OTP ↺
+                      Change Email / Resend Code
                     </p>
                   </>
               )}
               
               <button className="login-submit">
-                {isLogin ? 'Login' : (isOtpSent ? 'Verify & Register 🚀' : 'Send OTP 📩')}
+                {isLogin ? 'Login' : (isOtpSent ? 'Verify & Register' : 'Send Verification Code')}
               </button>
             </form>
 
             <p className="switch-text">
-              {isLogin ? "New here? " : "Already have an account? "}
+              {isLogin ? "New user? " : "Already have an account? "}
               <span onClick={() => {
                   setIsLogin(!isLogin);
-                  setIsOtpSent(false); // 👈 INDHA LINE MUKKIYAM! (Reset panrom)
-                  setOtp("");          // 👈 Pazhaya OTP irundha thodachidu
+                  setIsOtpSent(false); 
+                  setOtp("");          
               }}>
                 {isLogin ? "Create Account" : "Login"}
               </span>
@@ -228,51 +227,48 @@ const handleAuth = async (e) => {
         </div>
       )}
 
-      {/* Routes */}
       <Routes>
         <Route path="/" element={
             <>
                 <div className="sale-banner">
-                    <p className="scrolling-text">🎉 New Year Sale! 50% Exchange Offer 🛏️ — Limited Time Offer! ⏳</p>
+                    <p className="scrolling-text">Exclusive New Year Sale: 50% Exchange Offer on Mattresses — Limited Time Remaining!</p>
                 </div>
                 <div className="container">
-                    {currentUser && <h2 style={{color: 'green', textAlign:'center'}}>Welcome back, {currentUser}! 👋</h2>}
-                    <h2 style={{marginTop: '20px', textAlign: 'center'}}>Namma Best Collections</h2>
+                    {currentUser && <h2 style={{color: '#2c3e50', textAlign:'center'}}>Welcome back, {currentUser}</h2>}
+                    <h2 style={{marginTop: '20px', textAlign: 'center'}}>Featured Collections</h2>
                     <div className="product-grid">
-                    {products.map((product) => (
-                        <div key={product._id} className="product-card">
-                            <div onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
-                                
-                                {/*{/* --- DEBUG CODE START --- 
-                                <div style={{background: 'yellow', padding: '5px', fontSize: '10px', color: 'black'}}>
-                                  <strong>Debug Data:</strong> <br/>
-                                  Images Array: {JSON.stringify(product.images)} <br/>
-                                  Single Image: {product.image}
+                    
+                    {Array.isArray(products) && products.length > 0 ? (
+                        products.map((product) => (
+                            <div key={product._id} className="product-card">
+                                <div onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
+                                    <img 
+                                      src={(product.images && product.images.length > 0) ? product.images[0] : "https://placehold.co/400"} 
+                                      alt={product.name} 
+                                      onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
+                                      style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                                    />
                                 </div>
-                                {/* --- DEBUG CODE END --- */}
-                                
-                                <img 
-                                  src={(product.images && product.images.length > 0) ? product.images[0] : "https://placehold.co/400"} 
-                                  alt={product.name} 
-                                  onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
-                                  style={{ width: '100%', height: '200px', objectFit: 'cover' }}
-                                />
-                            </div>
-                            <div className="card-details">
-                                <h3 onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
-                                    {product.name}
-                                </h3>
-                                <p className="size">{product.size} | {product.material}</p>
-                                <div className="actions-row">
-                                    <div className="price-row"><span className="price">₹{product.price.toLocaleString()}</span></div>
-                                    <div className="buttons-group">
-                                        <button className="wishlist-btn" onClick={() => addToWishlist(product)}>❤️</button>
-                                        <button className="cart-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                                <div className="card-details">
+                                    <h3 onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
+                                        {product.name}
+                                    </h3>
+                                    <p className="size">{product.size} | {product.material}</p>
+                                    <div className="actions-row">
+                                        <div className="price-row"><span className="price">₹{product.price.toLocaleString()}</span></div>
+                                        <div className="buttons-group">
+                                            <button className="wishlist-btn" onClick={() => addToWishlist(product)}>Wishlist</button>
+                                            <button className="cart-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <p style={{textAlign: 'center', width: '100%', padding: '20px', fontSize: '1.2rem', color: '#666'}}>
+                            Loading products...
+                        </p>
+                    )}
                     </div>
                 </div>
             </>
