@@ -7,19 +7,43 @@ require('dotenv').config({ path: path.resolve(__dirname, './.env') });
 
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const nodemailer = require('nodemailer');
+// Note: cors package is not needed for this manual fix, but keeping it won't hurt if unused.
 
 const app = express();
+
+// --- 🔥 THE FIX STARTS HERE 🔥 ---
+// Using Manual Headers instead of 'cors' package to force acceptance of ANY URL.
+
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    
+    // 1. Dynamic Origin: If a request comes, reflect the origin back.
+    // This tricks the browser into thinking "Yes, YOU specifically are allowed."
+    if (origin) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+
+    // 2. Allow Credentials (Cookies/Tokens)
+    res.header("Access-Control-Allow-Credentials", "true");
+
+    // 3. Allow Methods
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+
+    // 4. Allow Headers
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+
+    // 5. Handle Preflight (Browser Security Check) immediately
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+    
+    next();
+});
+// --- 🔥 THE FIX ENDS HERE 🔥 ---
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-
-// CORS Configuration: Allows communication between Frontend and Backend
-app.use(cors({
-    origin: ["http://localhost:5173", "https://methakadai.vercel.app", "*"], 
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"]
-}));
 
 // MongoDB Database Connection
 const MONGO_URI = process.env.MONGO_URI;

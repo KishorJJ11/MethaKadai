@@ -50,6 +50,7 @@
   color: #888;
   cursor: pointer;
   transition: color 0.2s;
+  text-align: right;
 }
 
 .close-x-btn:hover {
