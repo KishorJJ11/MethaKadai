@@ -53,7 +53,7 @@ const getEmailTemplate = (title, message, otp, footerText) => {
     <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
         
         <div style="background-color: #2c3e50; padding: 20px; text-align: center;">
-            <h1 style="color: #f1c40f; margin: 0; font-size: 24px; letter-spacing: 1px;">MethaKadai 🛏️</h1>
+            <h1 style="color: #f1c40f; margin: 0; font-size: 24px; letter-spacing: 1px;">MethaKadai </h1>
             <p style="color: #ecf0f1; font-size: 12px; margin-top: 5px; text-transform: uppercase;">Quality Comfort Delivered</p>
         </div>
 
@@ -104,9 +104,13 @@ const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 // Admin Account
 const createAdminAccount = async () => {
     try {
-        const adminExists = await User.findOne({ username: 'admin' });
+
+        const adminEmail = process.env.ADMIN_EMAIL; // Fallback if env missing
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        const adminExists = await User.findOne({ username: 'Admin' });
         if (!adminExists) {
-            const newAdmin = new User({ username: 'admin', email: 'admin@gmail.com', password: 'admin123', phone: '9876543210', address: 'MethaKadai Head Office, Tamil Nadu.', profilePic: '' });
+            const newAdmin = new User({ username: 'Admin', email: adminEmail, password: adminPassword, phone: '9876543210', address: 'MethaKadai Head Office, Tamil Nadu.', profilePic: '' });
             await newAdmin.save();
         }
     } catch (error) { console.error("Admin error", error); }

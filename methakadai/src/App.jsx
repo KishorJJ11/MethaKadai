@@ -211,7 +211,7 @@ function App() {
       <Routes>
         <Route path="/" element={
           <>
-            <div className="sale-banner"><p className="scrolling-text">Exclusive New Year Sale: 50% Off!</p></div>
+            <div className="sale-banner"><p className="scrolling-text">Exclusive New Year Sale: 50% Exchange offer on Mattresses -- Limited Time Offer!</p></div>
               <div className="container">
                 {currentUser && <h2 style={{textAlign:'center'}}>Welcome, {currentUser}</h2>}
                 
