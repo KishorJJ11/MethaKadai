@@ -60,7 +60,7 @@ function Navbar({ cartCount, wishlistCount, setShowLogin, currentUser, handleLog
             <div className="user-section">
     
               <button className="logout-btn-small" onClick={handleLogout} title="Logout">
-                  Logout
+                  ⏻
               </button>
 
               <div className="nav-avatar" onClick={() => navigate('/profile')} title="Go to Profile">

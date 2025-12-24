@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Routes, Route, useNavigate } from 'react-router-dom'; 
 import { Toaster, toast } from 'react-hot-toast';
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import icons
 
 import Navbar from './components/Navbar';
 import Cart from './components/Cart';
@@ -195,7 +196,13 @@ function App() {
               
               <div className="password-input-container">
                 <input type={showPassword ? "text" : "password"} placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)}/>
-                <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "🙈" : "👁️"}</span>
+                <span 
+                    className="password-toggle-icon" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ cursor: 'pointer', color: '#666' }} // Added minimal style for better UX
+                >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </span>
               </div>
 
               {!isLogin && isOtpSent && (
@@ -218,7 +225,7 @@ function App() {
               <span onClick={() => {
                   setIsLogin(!isLogin);
                   setIsOtpSent(false); 
-                  setOtp("");          
+                  setOtp(""); 
               }}>
                 {isLogin ? "Create Account" : "Login"}
               </span>
@@ -257,7 +264,7 @@ function App() {
                                     <div className="actions-row">
                                         <div className="price-row"><span className="price">₹{product.price.toLocaleString()}</span></div>
                                         <div className="buttons-group">
-                                            <button className="wishlist-btn" onClick={() => addToWishlist(product)}>Wishlist</button>
+                                            <button className="wishlist-btn" onClick={() => addToWishlist(product)}>&hearts;</button>
                                             <button className="cart-btn" onClick={() => addToCart(product)}>Add to Cart</button>
                                         </div>
                                     </div>
