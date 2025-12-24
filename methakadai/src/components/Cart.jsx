@@ -5,37 +5,42 @@ import '../Styles/Cart.css';
 function Cart({ cart, removeFromCart, updateQuantity }) {
   const navigate = useNavigate();
 
-  // Total Calculation
+  // Calculate total amount
   const totalAmount = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   return (
     <div className="cart-container">
       
-      {/* --- INGA DHAAN ADD PANNIRUKKEN (Back Button) --- */}
+      {/* Back Button */}
       <button className="continue-shop-btn" onClick={() => navigate('/')}>
         ← Continue Shopping
       </button>
 
-      <h2>Your Shopping Cart 🛒</h2>
+      <h2>Shopping Cart</h2>
       
       {cart.length === 0 ? (
         <div className="empty-cart">
-          <p>Cart is Empty! 😢</p>
-          <button className="start-shop-btn" onClick={() => navigate('/')}>Start Shopping</button>
+          <p>Your cart is currently empty.</p>
+          <button className="start-shop-btn" onClick={() => navigate('/')}>Browse Products</button>
         </div>
       ) : (
         <div className="cart-content">
           <div className="cart-items">
             {cart.map((item, index) => (
               <div key={index} className="cart-item">
-                <img src={item.image} alt={item.name} />
+                {/* Safe Image Loading */}
+                <img 
+                    src={(item.images && item.images.length > 0) ? item.images[0] : (item.image || "https://placehold.co/400")} 
+                    alt={item.name} 
+                    onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
+                />
                 
                 <div className="item-details">
                   <h3>{item.name}</h3>
                   <p className="item-price">₹{item.price.toLocaleString()}</p>
                   
                   <div className="quantity-controls">
-                    <button onClick={() => updateQuantity(item._id, -1)}>-</button>
+                    <button onClick={() => updateQuantity(item._id, -1)} disabled={item.quantity <= 1}>-</button>
                     <span>{item.quantity}</span>
                     <button onClick={() => updateQuantity(item._id, 1)}>+</button>
                   </div>
@@ -43,7 +48,9 @@ function Cart({ cart, removeFromCart, updateQuantity }) {
 
                 <div className="item-actions">
                     <p className="subtotal">₹{(item.price * item.quantity).toLocaleString()}</p>
-                    <button className="remove-btn" onClick={() => removeFromCart(index)}>🗑️</button>
+                    <button className="remove-btn" onClick={() => removeFromCart(index)}>
+                        Remove
+                    </button>
                 </div>
               </div>
             ))}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -15,18 +15,19 @@ function Profile({ currentUser, setCurrentUser }) {
     username: '', phone: '', address: '', profilePic: ''
   });
 
+  // Smart API URL switching logic
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   useEffect(() => {
     if (!currentUser) {
         navigate('/'); 
     } else {
-        // Ippo Admin-kkum Database la irunthu dhaan data varum!
         fetchUserData();
     }
   }, [currentUser, navigate]);
 
   const fetchUserData = () => {
-    // Admin ah irundhalum DB call pogum (So namma Signup panna data varum)
-    axios.get(`https://methakadai.onrender.com/api/users/${currentUser}`)
+    axios.get(`${API_URL}/api/users/${currentUser}`)
         .then(res => {
             setUserData(res.data);
             setFormData({
@@ -37,10 +38,9 @@ function Profile({ currentUser, setCurrentUser }) {
             });
         })
         .catch(err => {
-            console.error("Error:", err);
-            // Incase Admin signup pannama login pannirundha, error varaama irukka:
+            console.error("Error fetching user data:", err);
             if(currentUser === 'admin') {
-                toast.error("Mapla! First 'admin' username la Signup pannu!");
+                toast.error("Administrator account not found in database.");
             }
         });
   };
@@ -68,39 +68,40 @@ function Profile({ currentUser, setCurrentUser }) {
 
   const handleSave = async () => {
     try {
-        const res = await axios.put(`https://methakadai.onrender.com/api/users/${currentUser}`, formData);
-        toast.success("Profile Update Panniyachu! ✅");
+        const res = await axios.put(`${API_URL}/api/users/${currentUser}`, formData);
+        toast.success("Profile updated successfully");
+        
         if (formData.username !== currentUser) {
-            // Admin username ah maatha vittura koodadhu, but safe side ku irukkattum
             setCurrentUser(formData.username);
         }
+        
         setIsEditing(false);
         setUserData(res.data); 
     } catch (error) {
-        toast.error("Update aagala mapla. Admin account Create panniya?");
+        toast.error("Failed to update profile. Please try again.");
     }
   };
 
-  if (!userData) return <div className="loading">Loading Profile... 👤</div>;
+  if (!userData) return <div className="loading">Loading Profile Details...</div>;
 
   return (
     <div className="profile-container">
-      <h2>{currentUser === 'admin' ? '👑 Admin Profile' : '👤 My Profile'}</h2>
+      <h2>{currentUser === 'admin' ? 'Administrator Profile' : 'My Profile'}</h2>
       
       <div className="profile-card">
         <div className="profile-header">
             
-            <div className="avatar-container" onClick={triggerFileInput}>
+            <div className="avatar-container" onClick={triggerFileInput} style={{ cursor: isEditing ? 'pointer' : 'default' }}>
                 {formData.profilePic ? (
                     <img src={formData.profilePic} alt="Profile" className="profile-img-circle" />
                 ) : (
                     <div className="avatar">
-                        {currentUser === 'admin' && !formData.profilePic ? 'A' : formData.username.charAt(0).toUpperCase()}
+                        {currentUser === 'admin' ? 'A' : formData.username.charAt(0).toUpperCase()}
                     </div>
                 )}
                 
                 {isEditing && (
-                    <div className="camera-overlay">📷</div>
+                    <div className="camera-overlay">Edit Photo</div>
                 )}
             </div>
 
@@ -118,45 +119,45 @@ function Profile({ currentUser, setCurrentUser }) {
                     <input 
                         type="text" name="username" value={formData.username} 
                         onChange={handleChange} className="edit-input"
-                        disabled={currentUser === 'admin'} // Admin username maatha koodathu (Safety)
+                        disabled={currentUser === 'admin'} 
                     />
-                    <small style={{color: '#dfe6e9'}}>Click photo to change 👇</small>
+                    <small style={{color: '#636e72'}}>Click photo to update</small>
                  </div>
             ) : (
                 <>
                     <h3>{userData.username}</h3>
-                    <p className="role">{currentUser === 'admin' ? 'Website Owner & Admin' : 'MethaKadai Customer'}</p>
+                    <p className="role">{currentUser === 'admin' ? 'System Administrator' : 'Verified Customer'}</p>
                 </>
             )}
         </div>
 
         <div className="profile-details">
             <div className="detail-row">
-                <span className="label">📧 Email:</span>
+                <span className="label">Email Address:</span>
                 <span className="value">{userData.email}</span>
             </div>
             
             <div className="detail-row">
-                <span className="label">📞 Phone:</span>
+                <span className="label">Phone Number:</span>
                 {isEditing ? (
                     <input 
                         type="text" name="phone" value={formData.phone} 
                         onChange={handleChange} className="edit-input"
                     />
                 ) : (
-                    <span className="value">{userData.phone || "Not Added"}</span>
+                    <span className="value">{userData.phone || "Not Provided"}</span>
                 )}
             </div>
 
             <div className="detail-row">
-                <span className="label">🏠 Address:</span>
+                <span className="label">Delivery Address:</span>
                 {isEditing ? (
                     <textarea 
                         name="address" value={formData.address} 
                         onChange={handleChange} className="edit-input"
                     />
                 ) : (
-                    <span className="value">{userData.address || "No Address Saved"}</span>
+                    <span className="value">{userData.address || "No address saved"}</span>
                 )}
             </div>
         </div>
@@ -164,20 +165,19 @@ function Profile({ currentUser, setCurrentUser }) {
         <div className="profile-actions">
             {isEditing ? (
                 <>
-                    <button className="save-btn" onClick={handleSave}>Save ✅</button>
+                    <button className="save-btn" onClick={handleSave}>Save Changes</button>
                     <button className="cancel-btn" onClick={() => {
                         setIsEditing(false);
                         setFormData({...formData, profilePic: userData.profilePic}); 
-                    }}>Cancel ❌</button>
+                    }}>Cancel</button>
                 </>
             ) : (
-                <button className="edit-btn" onClick={() => setIsEditing(true)}>Edit Profile ✏️</button>
+                <button className="edit-btn" onClick={() => setIsEditing(true)}>Edit Profile</button>
             )}
             
-            {/* Admin Dashboard Link */}
             {currentUser === 'admin' && !isEditing && (
-                <button className="edit-btn" onClick={() => navigate('/admin')} style={{backgroundColor: '#e74c3c', marginTop: '10px'}}>
-                    Go to Admin Dashboard 👑
+                <button className="edit-btn" onClick={() => navigate('/admin')} style={{backgroundColor: '#d63031', marginTop: '10px'}}>
+                    Access Admin Dashboard
                 </button>
             )}
         </div>

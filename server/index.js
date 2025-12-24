@@ -1,9 +1,9 @@
-// 👇 INDHA LINE ROMBA MUKKIYAM (RENDER FIX)
+// Render environment fix for DNS resolution
 const dns = require('node:dns');
 dns.setDefaultResultOrder('ipv4first'); 
 
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, './.env') }); // .env load agum
+require('dotenv').config({ path: path.resolve(__dirname, './.env') }); 
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -14,22 +14,22 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// ✅ CORS SETUP: Frontend & Backend pesa permission
+// CORS Configuration: Allows communication between Frontend and Backend
 app.use(cors({
-    origin: ["http://localhost:5173", "https://methakadai.vercel.app"], // Local & Live link
+    origin: ["http://localhost:5173", "https://methakadai.vercel.app"], 
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"]
 }));
 
-// --- MONGODB CONNECTION ---
+// MongoDB Database Connection
 const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI)
-.then(() => console.log("🔥 MongoDB Connected Successfully!"))
-.catch(err => console.error("❌ MongoDB Error:", err));
+.then(() => console.log("MongoDB Connection: Success"))
+.catch(err => console.error("MongoDB Connection: Error", err));
 
 
-// --- MAIL CONFIGURATION (PORT 2525 for Cloud) 📧 ---
+// Mail Server Configuration (SMTP Port 2525)
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 2525,             
@@ -46,7 +46,7 @@ const transporter = nodemailer.createTransport({
 
 let otpStore = {}; 
 
-// --- SCHEMAS ---
+// --- Database Schemas ---
 
 const productSchema = new mongoose.Schema({
     name: String, price: Number, size: String, material: String, warranty: String, images: [String], image: String, description: String
@@ -69,65 +69,67 @@ const orderSchema = new mongoose.Schema({
 });
 const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 
-// --- AUTO CREATE ADMIN ---
+// Automated Administrative Account Creation
 const createAdminAccount = async () => {
     try {
         const adminExists = await User.findOne({ username: 'admin' });
         if (!adminExists) {
             const newAdmin = new User({
-                username: 'admin', email: 'admin@gmail.com', password: 'admin123', phone: '9876543210', address: 'MethaKadai Head Office, Tamil Nadu.', profilePic: '' 
+                username: 'admin', 
+                email: 'admin@gmail.com', 
+                password: 'admin123', 
+                phone: '9876543210', 
+                address: 'MethaKadai Head Office, Tamil Nadu.', 
+                profilePic: '' 
             });
             await newAdmin.save();
-            console.log("👑 Admin Account Created Successfully!");
+            console.log("System Status: Admin account created.");
         } else {
-            console.log("👑 Admin Account Already Exists.");
+            console.log("System Status: Admin account verified.");
         }
     } catch (error) {
-        console.error("Error creating admin:", error);
+        console.error("System Error: Admin initialization failed.", error);
     }
 };
 createAdminAccount();
 
 
-// --- API ROUTES ---
+// --- API Endpoints ---
 
-// 1. SEND OTP ROUTE 
+// 1. Send Verification Code (OTP)
 app.post('/api/send-otp', async (req, res) => {
     const { email } = req.body;
-    console.log(`📨 Requesting OTP for: ${email}`);
+    console.log(`Processing verification request for: ${email}`);
 
     try {
         const existingUser = await User.findOne({ email });
         if (existingUser) { 
-            return res.status(400).json({ message: "Indha email la already account irukku!" }); 
+            return res.status(400).json({ message: "An account with this email already exists." }); 
         }
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStore[email] = otp; 
 
-        console.log(`🔑 Generated OTP for ${email}: ${otp}`);
-
-        // Email HTML Design
         const mailOptions = {
             from: `"MethaKadai Security" <kishorjj05@gmail.com>`, 
             to: email,
-            subject: '🔐 Your MethaKadai Verification Code', 
+            subject: 'Your MethaKadai Verification Code', 
             html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #f9f9f9;">
                 <div style="text-align: center; border-bottom: 2px solid #ff9900; padding-bottom: 10px;">
-                    <h2 style="color: #333; margin: 0;">MethaKadai 🛋️</h2>
-                    <p style="color: #666; font-size: 14px; margin-top: 5px;">Comfort Delivered to Your Doorstep</p>
+                    <h2 style="color: #333; margin: 0;">MethaKadai</h2>
+                    <p style="color: #666; font-size: 14px; margin-top: 5px;">Quality Comfort Delivered</p>
                 </div>
                 
                 <div style="padding: 20px 0; text-align: center;">
-                    <p style="font-size: 16px; color: #555;">Hello,</p>
-                    <p style="font-size: 16px; color: #555;">Thank you for registering with MethaKadai. Please use the following OTP to complete your sign-up procedures.</p>
+                    <p style="font-size: 16px; color: #555;">Greetings,</p>
+                    <p style="font-size: 16px; color: #555;">Thank you for choosing MethaKadai. Please use the following verification code to complete your registration.</p>
                     
                     <div style="background-color: #fff; border: 1px dashed #ff9900; padding: 15px; display: inline-block; margin: 20px 0; border-radius: 5px;">
                         <span style="font-size: 24px; font-weight: bold; color: #333; letter-spacing: 5px;">${otp}</span>
                     </div>
                     
-                    <p style="font-size: 14px; color: #999;">This OTP is valid for 10 minutes. Do not share this code with anyone.</p>
+                    <p style="font-size: 14px; color: #999;">This code is valid for 10 minutes. For security reasons, do not share this code with anyone.</p>
                 </div>
 
                 <div style="border-top: 1px solid #e0e0e0; padding-top: 15px; text-align: center;">
@@ -139,46 +141,42 @@ app.post('/api/send-otp', async (req, res) => {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✅ Mail Sent Successfully to ${email}`);
-        
-        res.json({ message: "OTP Sent to your Email! 📧" });
+        console.log(`Notification: Verification email dispatched to ${email}`);
+        res.json({ message: "Verification code sent to your email." });
 
     } catch (error) {
-        console.error("❌ Mail Error:", error);
-        res.status(500).json({ message: "Email Anuppa Mudiyala! (Network/Brevo Issue)" });
+        console.error("SMTP Error:", error);
+        res.status(500).json({ message: "Unable to send email. Please check your network or mail service." });
     }
 });
 
-// 2. SIGNUP API
+// 2. User Registration (Signup)
 app.post('/api/signup', async (req, res) => {
     const { username, email, password, otp } = req.body;
-    console.log(`Trying Signup: ${email} with OTP: ${otp}`);
 
     if (!otpStore[email] || otpStore[email] !== otp) {
-        return res.status(400).json({ message: "Thappana OTP Mapla! Correct-a podu." });
+        return res.status(400).json({ message: "Invalid verification code. Please try again." });
     }
 
     try {
         const newUser = new User({ username, email, password });
         await newUser.save();
         delete otpStore[email]; 
-        res.status(201).json({ message: "Account Created Successfully! 🎉", username: newUser.username });
+        res.status(201).json({ message: "Account successfully created.", username: newUser.username });
     } catch (error) { 
-        res.status(500).json({ message: "Server Error" }); 
+        res.status(500).json({ message: "Internal server error during registration." }); 
     }
 });
 
-// GET PRODUCTS
+// 3. Product Management Endpoints
 app.get('/api/products', async (req, res) => {
-    try { const products = await Product.find(); res.json(products); } catch (error) { res.status(500).json({ message: "Error" }); }
+    try { const products = await Product.find(); res.json(products); } catch (error) { res.status(500).json({ message: "Failed to fetch products." }); }
 });
 
-// GET SINGLE PRODUCT
 app.get('/api/products/:id', async (req, res) => {
-    try { const product = await Product.findById(req.params.id); if (!product) return res.status(404).json({ message: "Product Kidaikkala" }); res.json(product); } catch (error) { res.status(500).json({ message: "Server Error" }); }
+    try { const product = await Product.findById(req.params.id); if (!product) return res.status(404).json({ message: "Product not found." }); res.json(product); } catch (error) { res.status(500).json({ message: "Internal server error." }); }
 });
 
-// ADD PRODUCT
 app.post('/api/products', async (req, res) => {
     try {
         const { name, price, size, material, warranty, images, description } = req.body;
@@ -187,11 +185,10 @@ app.post('/api/products', async (req, res) => {
             image: (images && images.length > 0) ? images[0] : "", description
         });
         await newProduct.save();
-        res.status(201).json({ message: "Product Added Successfully! ✅", product: newProduct });
-    } catch (error) { res.status(500).json({ message: "Product add panna mudiyala!" }); }
+        res.status(201).json({ message: "Product added successfully.", product: newProduct });
+    } catch (error) { res.status(500).json({ message: "Failed to add product." }); }
 });
 
-// EDIT PRODUCT
 app.put('/api/products/:id', async (req, res) => {
     try {
         const { name, price, size, material, warranty, images, description } = req.body;
@@ -200,66 +197,64 @@ app.put('/api/products/:id', async (req, res) => {
             { name, price, size, material, warranty, images, image: (images && images.length > 0) ? images[0] : "", description }, 
             { new: true }
         );
-        res.json({ message: "Product Updated Successfully! ✨", product: updatedProduct });
-    } catch (error) { res.status(500).json({ message: "Update fail!" }); }
+        res.json({ message: "Product details updated successfully.", product: updatedProduct });
+    } catch (error) { res.status(500).json({ message: "Failed to update product details." }); }
 });
 
-// DELETE PRODUCT
 app.delete('/api/products/:id', async (req, res) => {
     try {
         await Product.findByIdAndDelete(req.params.id);
-        res.json({ message: "Product Deleted Successfully! 🗑️" });
-    } catch (error) { res.status(500).json({ message: "Delete fail!" }); }
+        res.json({ message: "Product deleted successfully." });
+    } catch (error) { res.status(500).json({ message: "Failed to delete product." }); }
 });
 
-// USER ROUTES
+// 4. User Profile Management
 app.get('/api/users/:username', async (req, res) => {
-    try { const user = await User.findOne({ username: req.params.username }); if (!user) return res.status(404).json({ message: "User not found" }); res.json(user); } catch (error) { res.status(500).json({ message: "Server Error" }); }
+    try { const user = await User.findOne({ username: req.params.username }); if (!user) return res.status(404).json({ message: "User profile not found." }); res.json(user); } catch (error) { res.status(500).json({ message: "Internal server error." }); }
 });
 
 app.put('/api/users/:username', async (req, res) => {
     const { username, phone, address, profilePic } = req.body;
-    try { const updatedUser = await User.findOneAndUpdate({ username: req.params.username }, { username, phone, address, profilePic }, { new: true }); res.json(updatedUser); } catch (error) { res.status(500).json({ message: "Update fail!" }); }
+    try { const updatedUser = await User.findOneAndUpdate({ username: req.params.username }, { username, phone, address, profilePic }, { new: true }); res.json(updatedUser); } catch (error) { res.status(500).json({ message: "Failed to update profile." }); }
 });
 
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-    try { const user = await User.findOne({ email }); if (!user || user.password !== password) { return res.status(400).json({ message: "Invalid Email or Password!" }); } res.json({ message: "Login Success!", username: user.username, email: user.email }); } catch (error) { res.status(500).json({ message: "Server Error" }); }
+    try { const user = await User.findOne({ email }); if (!user || user.password !== password) { return res.status(400).json({ message: "Invalid credentials." }); } res.json({ message: "Login successful.", username: user.username, email: user.email }); } catch (error) { res.status(500).json({ message: "Internal server error." }); }
 });
 
-// ORDER ROUTES
+// 5. Order Management Endpoints
 app.post('/api/orders', async (req, res) => {
-    try { const newOrder = new Order(req.body); await newOrder.save(); res.status(201).json({ message: "Order Placed Successfully! 🎉" }); } catch (error) { res.status(500).json({ message: "Order fail!" }); }
+    try { const newOrder = new Order(req.body); await newOrder.save(); res.status(201).json({ message: "Order placed successfully." }); } catch (error) { res.status(500).json({ message: "Order placement failed." }); }
 });
 
 app.get('/api/orders', async (req, res) => {
-    try { const orders = await Order.find(); res.json(orders); } catch (error) { res.status(500).json({ message: "Error fetching orders" }); }
+    try { const orders = await Order.find(); res.json(orders); } catch (error) { res.status(500).json({ message: "Failed to retrieve orders." }); }
 });
 
 app.get('/api/myorders/:name', async (req, res) => {
-    try { const orders = await Order.find({ name: req.params.name }).sort({ orderDate: -1 }); res.json(orders); } catch (error) { res.status(500).json({ message: "Error" }); }
+    try { const orders = await Order.find({ name: req.params.name }).sort({ orderDate: -1 }); res.json(orders); } catch (error) { res.status(500).json({ message: "Failed to retrieve order history." }); }
 });
 
 app.put('/api/orders/:id/status', async (req, res) => {
     const { status } = req.body; 
-    try { const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: status }, { new: true }); res.json(updatedOrder); } catch (error) { res.status(500).json({ message: "Status update fail!" }); }
+    try { const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: status }, { new: true }); res.json(updatedOrder); } catch (error) { res.status(500).json({ message: "Failed to update order status." }); }
 });
 
-// CANCEL ORDER
 app.put('/api/orders/:id/cancel', async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
-        if (!order) return res.status(404).json({ message: "Order Kaanom!" });
+        if (!order) return res.status(404).json({ message: "Order not found." });
         if (order.status === 'Shipped' || order.status === 'Delivered') {
-            return res.status(400).json({ message: "Cannot cancel now." });
+            return res.status(400).json({ message: "Cannot cancel order after shipment." });
         }
         order.status = "Cancelled";
         await order.save();
-        res.json({ message: "Order Cancelled Successfully! ❌", order });
+        res.json({ message: "Order has been successfully cancelled.", order });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 🔥 SEED ROUTE (Idha use panni Dummy Products ethalam) 🔥
+// 6. Database Initialization Endpoint (Seeds Sample Data)
 app.get('/api/seed', async (req, res) => {
     try {
         const sampleProducts = [
@@ -285,16 +280,13 @@ app.get('/api/seed', async (req, res) => {
                 images: ["https://5.imimg.com/data5/SELLER/Default/2021/6/GV/MC/XV/26602448/cotton-mattress-500x500.jpg"]
             }
         ];
-        // Insert only if needed (Remove next line to avoid duplicates on every reload)
-        // await Product.insertMany(sampleProducts); 
         
-        // Better way: Check if empty then insert
         const count = await Product.countDocuments();
         if(count === 0){
              await Product.insertMany(sampleProducts);
-             res.json({ message: "✅ Super! 3 Products Added Successfully!" });
+             res.json({ message: "Database seeding complete. 3 products added." });
         } else {
-             res.json({ message: "✅ Products Already Exist!" });
+             res.json({ message: "Seed operation skipped. Products already exist." });
         }
 
     } catch (error) {
@@ -304,7 +296,7 @@ app.get('/api/seed', async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} 🚀`);
+    console.log(`System Status: Server active on port ${PORT}`);
 });
 
 module.exports = app;
