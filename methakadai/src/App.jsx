@@ -31,20 +31,40 @@ function App() {
 
   const navigate = useNavigate();
 
-  // API URL
-  const API_URL = import.meta.env.VITE_API_URL || 'https://methakadai.onrender.com';
+  // ✅ FIX 1: Smart URL Switching
+  // Local la irundha -> localhost:5000 edukkum
+  // Vercel la irundha -> Render link edukkum
+  const API_URL = import.meta.env.DEV 
+    ? "http://localhost:5000" 
+    : "https://methakadai.onrender.com"; 
 
+  // ✅ FIX 2: Safe Data Fetching
   useEffect(() => {
     axios.get(`${API_URL}/api/products`)
-      .then(response => setProducts(response.data))
-      .catch(error => console.error("Error loading products:", error));
+      .then(response => {
+        console.log("🔥 API Response:", response.data); 
+        
+        // Data Array-va irundha mattum set pannum. Illana Empty array.
+        if (Array.isArray(response.data)) {
+            setProducts(response.data);
+        } else if (response.data.products && Array.isArray(response.data.products)) {
+            setProducts(response.data.products);
+        } else {
+            console.warn("⚠️ Data format correct ah illa, empty array set panren.");
+            setProducts([]);
+        }
+      })
+      .catch(error => {
+        console.error("Error loading products:", error);
+        setProducts([]); // Error vandhalum crash aagama irukka
+      });
   }, []);
 
   // Reload pannalum User-a nyabagham vechukka:
   useEffect(() => {
-    const storedUser = localStorage.getItem("methaUser"); // Check Storage
+    const storedUser = localStorage.getItem("methaUser"); 
     if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser)); // Irundha, State la set pannu
+      setCurrentUser(JSON.parse(storedUser)); 
     }
   }, []);
 
@@ -108,14 +128,11 @@ function App() {
   };
 
   // --- AUTH LOGIC ---
-  // client/src/App.jsx
-
-const handleAuth = async (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
 
     // 1. Login Logic
     if (isLogin) {
-        console.log("🔵 Login Try Panrom...");
         try {
             const res = await axios.post(`${API_URL}/api/login`, { email, password });
             toast.success(res.data.message);
@@ -126,23 +143,18 @@ const handleAuth = async (e) => {
         return;
     }
 
-    // 2. Send OTP Logic (OTP Innum Anuppala na)
+    // 2. Send OTP Logic
     if (!isOtpSent) {
-        console.log("🟡 OTP Anuppa Porom..."); // Debug Log
         try {
             const res = await axios.post(`${API_URL}/api/send-otp`, { email });
-            console.log("✅ OTP Sent Success:", res.data);
             toast.success(res.data.message);
-            setIsOtpSent(true); // Success aana dhaan Next step ku pogum
+            setIsOtpSent(true); 
         } catch (error) { 
-            console.error("❌ OTP Error:", error);
             toast.error(error.response?.data?.message || "Mail Anuppa Mudiyala!"); 
         }
     } 
-    
-    // 3. Signup Logic (OTP Anuppiyachu na)
+    // 3. Signup Logic
     else {
-        console.log("🟢 Verify & Signup Try Panrom..."); // Debug Log
         try {
             const res = await axios.post(`${API_URL}/api/signup`, { username, email, password, otp });
             toast.success(res.data.message);
@@ -152,17 +164,14 @@ const handleAuth = async (e) => {
             setIsOtpSent(false);
             setOtp("");
         } catch (error) { 
-            console.error("❌ Signup Error:", error);
             toast.error(error.response?.data?.message || "Invalid OTP"); 
         }
     }
-};
+  };
 
   const handleLogout = () => {
-    // 👇 CHANGE HERE
-    localStorage.removeItem("methaUser"); // 🗑️ Delete pannu
+    localStorage.removeItem("methaUser"); 
     setCurrentUser(null);
-    
     toast.success("Logout Successfully! 👋");
     navigate('/'); 
   }
@@ -200,8 +209,6 @@ const handleAuth = async (e) => {
               {!isLogin && isOtpSent && (
                   <>
                     <input type="text" placeholder="Enter OTP" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1'}} />
-                    
-                    {/* 👇 INDHA LINE-A SERTHUKKO MAPLA */}
                     <p style={{fontSize: '12px', color: 'blue', cursor: 'pointer', textAlign: 'right', marginTop: '5px'}} 
                       onClick={() => setIsOtpSent(false)}>
                       Change Email / Resend OTP ↺
@@ -218,8 +225,8 @@ const handleAuth = async (e) => {
               {isLogin ? "New here? " : "Already have an account? "}
               <span onClick={() => {
                   setIsLogin(!isLogin);
-                  setIsOtpSent(false); // 👈 INDHA LINE MUKKIYAM! (Reset panrom)
-                  setOtp("");          // 👈 Pazhaya OTP irundha thodachidu
+                  setIsOtpSent(false); 
+                  setOtp("");          
               }}>
                 {isLogin ? "Create Account" : "Login"}
               </span>
@@ -239,40 +246,40 @@ const handleAuth = async (e) => {
                     {currentUser && <h2 style={{color: 'green', textAlign:'center'}}>Welcome back, {currentUser}! 👋</h2>}
                     <h2 style={{marginTop: '20px', textAlign: 'center'}}>Namma Best Collections</h2>
                     <div className="product-grid">
-                    {products.map((product) => (
-                        <div key={product._id} className="product-card">
-                            <div onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
-                                
-                                {/*{/* --- DEBUG CODE START --- 
-                                <div style={{background: 'yellow', padding: '5px', fontSize: '10px', color: 'black'}}>
-                                  <strong>Debug Data:</strong> <br/>
-                                  Images Array: {JSON.stringify(product.images)} <br/>
-                                  Single Image: {product.image}
+                    
+                    {/* ✅ FIX 3: Safe Map Method - Error varaadhu */}
+                    {Array.isArray(products) && products.length > 0 ? (
+                        products.map((product) => (
+                            <div key={product._id} className="product-card">
+                                <div onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
+                                    <img 
+                                      src={(product.images && product.images.length > 0) ? product.images[0] : "https://placehold.co/400"} 
+                                      alt={product.name} 
+                                      onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
+                                      style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                                    />
                                 </div>
-                                {/* --- DEBUG CODE END --- */}
-                                
-                                <img 
-                                  src={(product.images && product.images.length > 0) ? product.images[0] : "https://placehold.co/400"} 
-                                  alt={product.name} 
-                                  onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
-                                  style={{ width: '100%', height: '200px', objectFit: 'cover' }}
-                                />
-                            </div>
-                            <div className="card-details">
-                                <h3 onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
-                                    {product.name}
-                                </h3>
-                                <p className="size">{product.size} | {product.material}</p>
-                                <div className="actions-row">
-                                    <div className="price-row"><span className="price">₹{product.price.toLocaleString()}</span></div>
-                                    <div className="buttons-group">
-                                        <button className="wishlist-btn" onClick={() => addToWishlist(product)}>❤️</button>
-                                        <button className="cart-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                                <div className="card-details">
+                                    <h3 onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
+                                        {product.name}
+                                    </h3>
+                                    <p className="size">{product.size} | {product.material}</p>
+                                    <div className="actions-row">
+                                        <div className="price-row"><span className="price">₹{product.price.toLocaleString()}</span></div>
+                                        <div className="buttons-group">
+                                            <button className="wishlist-btn" onClick={() => addToWishlist(product)}>❤️</button>
+                                            <button className="cart-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <p style={{textAlign: 'center', width: '100%', padding: '20px', fontSize: '1.2rem', color: '#666'}}>
+                            Loading products or No products found... ⏳
+                        </p>
+                    )}
+
                     </div>
                 </div>
             </>
