@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Routes, Route, useNavigate } from 'react-router-dom'; 
 import { Toaster, toast } from 'react-hot-toast';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import icons
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
 
 import Navbar from './components/Navbar';
 import Cart from './components/Cart';
@@ -12,6 +12,7 @@ import ProductDetails from './components/ProductDetails';
 import Profile from './components/Profile';
 import MyOrders from './components/MyOrders';
 import AdminOrders from './components/AdminOrders';
+import Footer from './components/Footer'; 
 import './App.css';
 
 function App() {
@@ -32,12 +33,12 @@ function App() {
 
   const navigate = useNavigate();
 
-  // API URL Configuration (Local vs Production)
+  // API URL Configuration
   const API_URL = import.meta.env.DEV 
     ? "http://localhost:5000" 
     : "https://methakadai.onrender.com"; 
 
-  // Fetch Products with Safety Checks
+  // Fetch Products
   useEffect(() => {
     axios.get(`${API_URL}/api/products`)
       .then(response => {
@@ -170,7 +171,7 @@ function App() {
   }
 
   return (
-    <div>
+    <div className="app-wrapper">
       <Toaster position="bottom-center" reverseOrder={false} />
 
       <Navbar 
@@ -196,10 +197,11 @@ function App() {
               
               <div className="password-input-container">
                 <input type={showPassword ? "text" : "password"} placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)}/>
+                
                 <span 
                     className="password-toggle-icon" 
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ cursor: 'pointer', color: '#666' }} // Added minimal style for better UX
+                    style={{ cursor: 'pointer', color: '#666', display: 'flex', alignItems: 'center' }} 
                 >
                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </span>
@@ -289,6 +291,8 @@ function App() {
         <Route path="/myorders" element={<MyOrders currentUser={currentUser} />} />
         <Route path="/admin" element={<AdminOrders />} />
       </Routes>
+
+      <Footer />
     </div>
   );
 }
