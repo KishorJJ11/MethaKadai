@@ -16,7 +16,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // CORS Configuration: Allows communication between Frontend and Backend
 app.use(cors({
-    origin: ["http://localhost:5173", "https://methakadai.vercel.app"], 
+    origin: "*", 
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"]
 }));
