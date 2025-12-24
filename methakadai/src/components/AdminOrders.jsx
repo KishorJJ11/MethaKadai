@@ -159,9 +159,10 @@ const AdminOrders = () => {
       <div className="orders-section">
         <h2>🚚 Recent Orders</h2>
         {orders.length === 0 ? <p>Innum orders varala mapla...</p> : (
+          <div className="table-responsive">
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
             <thead>
-              <tr style={{ background: '#333', color: 'white' }}>
+              <tr style={{ background: '#333', color: 'white', width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
                 <th style={{ padding: '10px' }}>Order ID</th>
                 <th>Customer</th>
                 <th>Items</th>
@@ -197,6 +198,7 @@ const AdminOrders = () => {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

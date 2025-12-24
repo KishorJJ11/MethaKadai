@@ -308,3 +308,64 @@
     cursor: pointer;
     font-weight: bold;
 }
+
+/* Container Padding Fix */
+.admin-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box; /* Padding ulla adangidum */
+}
+
+/* --- TABLE SCROLL FIX (THE MAGIC) --- */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* Side la scroll aagum */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile */
+    margin-top: 20px;
+    border: 1px solid #ddd; /* Border to show boundaries */
+    border-radius: 8px;
+}
+
+/* Table Style */
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Minimum width - idhu irundha dhaan scroll aagum */
+}
+
+.orders-table th, .orders-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    white-space: nowrap; /* Text madinjidama ore line la irukkum */
+}
+
+/* --- PRODUCT LIST SCROLL --- */
+.product-list > div {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px; /* Scrollbar space */
+}
+
+/* --- MOBILE SPECIFIC FIXES --- */
+@media (max-width: 768px) {
+    h1, h2 {
+        font-size: 1.5rem; /* Chinna heading */
+    }
+
+    /* Form Inputs Stack */
+    form {
+        grid-template-columns: 1fr !important; /* Single column layout */
+    }
+
+    input, textarea, button {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Hide less important columns on mobile (Optional) */
+    /* .orders-table th:nth-child(4), .orders-table td:nth-child(4) { display: none; } */
+}
