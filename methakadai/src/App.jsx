@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Routes, Route, useNavigate } from 'react-router-dom'; 
 import { Toaster, toast } from 'react-hot-toast';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import Eye Icons
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
 
 import Navbar from './components/Navbar';
 import Cart from './components/Cart';
@@ -12,6 +12,7 @@ import ProductDetails from './components/ProductDetails';
 import Profile from './components/Profile';
 import MyOrders from './components/MyOrders';
 import AdminOrders from './components/AdminOrders';
+import Footer from './components/Footer'; // ✅ IMPORTED FOOTER
 import './App.css';
 
 function App() {
@@ -170,7 +171,7 @@ function App() {
   }
 
   return (
-    <div>
+    <div className="app-wrapper"> {/* Added wrapper class for sticky footer structure if needed */}
       <Toaster position="bottom-center" reverseOrder={false} />
 
       <Navbar 
@@ -291,6 +292,8 @@ function App() {
         <Route path="/myorders" element={<MyOrders currentUser={currentUser} />} />
         <Route path="/admin" element={<AdminOrders />} />
       </Routes>
+
+      <Footer /> {/* ✅ ADDED FOOTER HERE */}
     </div>
   );
 }
