@@ -13,6 +13,7 @@ import Profile from './components/Profile';
 import MyOrders from './components/MyOrders';
 import AdminOrders from './components/AdminOrders';
 import Footer from './components/Footer'; 
+import './Styles/Skeleton.css'; // Ensure this file exists
 import './App.css';
 
 function App() {
@@ -31,6 +32,9 @@ function App() {
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
 
+  // Loading State
+  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
   // API URL Configuration
@@ -38,8 +42,9 @@ function App() {
     ? "http://localhost:5000" 
     : "https://methakadai.onrender.com"; 
 
-  // Fetch Products
+  // Fetch Products with Loading Logic
   useEffect(() => {
+    setLoading(true); // Start loading
     axios.get(`${API_URL}/api/products`)
       .then(response => {
         if (Array.isArray(response.data)) {
@@ -49,10 +54,12 @@ function App() {
         } else {
             setProducts([]);
         }
+        setLoading(false); // Stop loading on success
       })
       .catch(error => {
         console.error("Error loading products:", error);
         setProducts([]); 
+        setLoading(false); // Stop loading on error
       });
   }, [API_URL]);
 
@@ -247,37 +254,47 @@ function App() {
                     <h2 style={{marginTop: '20px', textAlign: 'center'}}>Featured Collections</h2>
                     <div className="product-grid">
                     
-                    {Array.isArray(products) && products.length > 0 ? (
-                        products.map((product) => (
-                            <div key={product._id} className="product-card">
-                                <div onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
-                                    <img 
-                                      src={(product.images && product.images.length > 0) ? product.images[0] : "https://placehold.co/400"} 
-                                      alt={product.name} 
-                                      onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
-                                      style={{ width: '100%', height: '200px', objectFit: 'cover' }}
-                                    />
-                                </div>
-                                <div className="card-details">
-                                    <h3 onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
-                                        {product.name}
-                                    </h3>
-                                    <p className="size">{product.size} | {product.material}</p>
-                                    <div className="actions-row">
-                                        <div className="price-row"><span className="price">₹{product.price.toLocaleString()}</span></div>
-                                        <div className="buttons-group">
-                                            <button className="wishlist-btn" onClick={() => addToWishlist(product)}>&hearts;</button>
-                                            <button className="cart-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                    {/* 👇 SKELETON LOADER LOGIC 👇 */}
+                    {loading ? (
+                        Array.from({ length: 8 }).map((_, index) => (
+                            <div key={index} className="skeleton-card"></div>
+                        ))
+                    ) : (
+                        Array.isArray(products) && products.length > 0 ? (
+                            products.map((product) => (
+                                <div key={product._id} className="product-card">
+                                    <div onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
+                                        <img 
+                                          src={(product.images && product.images.length > 0) ? product.images[0] : "https://placehold.co/400"} 
+                                          alt={product.name} 
+                                          loading="lazy" /* Lazy Load for Speed */
+                                          onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
+                                          style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                                        />
+                                    </div>
+                                    <div className="card-details">
+                                        <h3 onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
+                                            {product.name}
+                                        </h3>
+                                        <p className="size">{product.size} | {product.material}</p>
+                                        <div className="actions-row">
+                                            <div className="price-row"><span className="price">₹{product.price.toLocaleString()}</span></div>
+                                            <div className="buttons-group">
+                                                <button className="wishlist-btn" onClick={() => addToWishlist(product)}>&hearts;</button>
+                                                <button className="cart-btn" onClick={() => addToCart(product)}>Add to Cart</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p style={{textAlign: 'center', width: '100%', padding: '20px', fontSize: '1.2rem', color: '#666'}}>
-                            Loading products...
-                        </p>
+                            ))
+                        ) : (
+                            <p style={{textAlign: 'center', width: '100%', padding: '20px', fontSize: '1.2rem', color: '#666'}}>
+                                No products found.
+                            </p>
+                        )
                     )}
+                    {/* 👆 SKELETON LOGIC END 👆 */}
+
                     </div>
                 </div>
             </>
