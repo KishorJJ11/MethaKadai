@@ -7,22 +7,39 @@ require('dotenv').config({ path: path.resolve(__dirname, './.env') });
 
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
+const cors = require('cors'); // Keeping import but overriding with manual headers
 const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// CORS Configuration: Allows communication between Frontend and Backend
-app.use(cors({
-    origin: true, 
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-}));
-// Handle Preflight requests (Browser security check) explicitly
-app.options('*', cors());
+// ✅ MANUAL CORS MIDDLEWARE (The Nuclear Fix)
+// This manually sets the headers for every single request.
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    
+    // If a request comes from anywhere (Vercel, Localhost, etc.), allow it.
+    if (origin) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+
+    // Allow these methods
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    
+    // Allow these headers (Content-Type is crucial)
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    
+    // Allow credentials (Cookies/Tokens)
+    res.header("Access-Control-Allow-Credentials", "true");
+
+    // Handle Preflight (Browser Security Check) immediately
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+    
+    next();
+});
 
 // MongoDB Database Connection
 const MONGO_URI = process.env.MONGO_URI;
