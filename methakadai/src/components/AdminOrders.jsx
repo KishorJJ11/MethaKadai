@@ -13,9 +13,10 @@ const AdminOrders = () => {
   // View Order Details State
   const [selectedOrder, setSelectedOrder] = useState(null); 
 
+  // ✅ ADDED "category" to State
   const [newProduct, setNewProduct] = useState({
     name: '', price: '', size: '', material: '', warranty: '', 
-    images: '', description: ''
+    images: '', description: '', category: '' 
   });
 
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,6 @@ const AdminOrders = () => {
   const fetchOrders = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/orders`);
-      // ✅ SAFETY CHECK: Only set if it's an array
       if (Array.isArray(res.data)) {
         setOrders(res.data);
       } else {
@@ -39,14 +39,13 @@ const AdminOrders = () => {
       }
     } catch (err) { 
         console.error("Error fetching orders:", err);
-        setOrders([]); // Safety Fallback
+        setOrders([]); 
     }
   };
 
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/products`);
-      // ✅ SAFETY CHECK
       if (Array.isArray(res.data)) {
         setProducts(res.data);
       } else {
@@ -58,12 +57,17 @@ const AdminOrders = () => {
     }
   };
 
+  // ✅ HELPER: Get Unique Categories for Dropdown
+  const existingCategories = Array.isArray(products) 
+    ? [...new Set(products.map(p => p.category || "General"))] 
+    : [];
+
   const handleChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
   };
 
   const deleteProduct = async (id) => {
-    if(!window.confirm("Are you sure you want to delete this product? This action cannot be undone.")) return;
+    if(!window.confirm("Are you sure you want to delete this product?")) return;
     try {
       await axios.delete(`${API_URL}/api/products/${id}`);
       toast.success("Product deleted successfully");
@@ -83,14 +87,15 @@ const AdminOrders = () => {
         material: product.material,
         warranty: product.warranty,
         images: imagesString,
-        description: product.description
+        description: product.description,
+        category: product.category || "" // ✅ Populate Category
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const cancelEdit = () => {
     setEditId(null);
-    setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '' });
+    setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
   };
 
   const handleSubmit = async (e) => {
@@ -109,7 +114,7 @@ const AdminOrders = () => {
             await axios.post(`${API_URL}/api/products`, productToSend);
             toast.success('Product added successfully');
         }
-        setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '' });
+        setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
         fetchProducts();
     } catch (error) {
         console.error(error);
@@ -139,6 +144,32 @@ const AdminOrders = () => {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+          
+          {/* ✅ NEW CATEGORY SECTION */}
+          <div style={{gridColumn: 'span 2', background: '#e9ecef', padding: '10px', borderRadius: '5px', border: '1px dashed #ced4da'}}>
+             <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#495057'}}>Product Folder / Category:</label>
+             <div style={{display: 'flex', gap: '10px'}}>
+                 {/* Dropdown to select existing folders */}
+                 <select 
+                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                    style={{padding: '10px', borderRadius: '4px', border: '1px solid #ced4da', flex: 1}}
+                 >
+                     <option value="">-- Choose Existing Folder --</option>
+                     {existingCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                 </select>
+
+                 {/* Input to type new folder name */}
+                 <input 
+                    name="category" 
+                    placeholder="OR Type New Category Name (e.g. Pillows)" 
+                    value={newProduct.category} 
+                    onChange={handleChange} 
+                    required 
+                    style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ced4da', flex: 1.5, fontWeight: 'bold' }} 
+                 />
+             </div>
+          </div>
+
           <input name="name" placeholder="Product Name" value={newProduct.name} onChange={handleChange} required style={{ padding: '10px' }} />
           <input name="price" type="number" placeholder="Price (₹)" value={newProduct.price} onChange={handleChange} required style={{ padding: '10px' }} />
           <input name="size" placeholder="Size (e.g., Queen 6x5)" value={newProduct.size} onChange={handleChange} required style={{ padding: '10px' }} />
@@ -158,15 +189,17 @@ const AdminOrders = () => {
         <h2>Available Products ({products.length})</h2>
         <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', padding: '10px' }}>
           
-          {/* ✅ FIXED: Added Safety Check for Products Map */}
           {Array.isArray(products) && products.length > 0 ? (
             products.map(p => (
                 <div key={p._id} style={{ border: '1px solid #ddd', padding: '15px', minWidth: '220px', borderRadius: '8px', background: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                {/* ✅ Show Category Badge */}
+                <span style={{background: '#6c757d', color: 'white', fontSize: '10px', padding: '3px 8px', borderRadius: '10px', textTransform: 'uppercase'}}>{p.category || "General"}</span>
+
                 <img 
                     src={(p.images && p.images.length > 0) ? p.images[0] : (p.image || "https://placehold.co/400")}
                     onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
                     alt={p.name} 
-                    style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px' }} 
+                    style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', marginTop: '5px' }} 
                 />
                 <p style={{fontSize: '16px', margin: '10px 0 5px'}}><strong>{p.name}</strong></p>
                 <p style={{color: '#555', margin: '0 0 10px'}}>₹{p.price.toLocaleString()}</p>
@@ -188,7 +221,6 @@ const AdminOrders = () => {
       <div className="orders-section">
         <h2>Recent Orders</h2>
         
-        {/* ✅ FIXED: Added Safety Check for Orders Map */}
         {!Array.isArray(orders) || orders.length === 0 ? (
             <p style={{color: '#666', fontStyle: 'italic'}}>No orders found.</p>
         ) : (

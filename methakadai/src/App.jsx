@@ -13,7 +13,7 @@ import Profile from './components/Profile';
 import MyOrders from './components/MyOrders';
 import AdminOrders from './components/AdminOrders';
 import Footer from './components/Footer'; 
-import './Styles/Skeleton.css'; // Ensure this file exists
+import './Styles/Skeleton.css'; 
 import './App.css';
 
 function App() {
@@ -35,6 +35,9 @@ function App() {
   // Loading State
   const [loading, setLoading] = useState(true);
 
+  // ✅ NEW: Selected Category State (Default: "All")
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
   const navigate = useNavigate();
 
   // API URL Configuration
@@ -42,9 +45,9 @@ function App() {
     ? "http://localhost:5000" 
     : "https://methakadai.onrender.com"; 
 
-  // Fetch Products with Loading Logic
+  // Fetch Products
   useEffect(() => {
-    setLoading(true); // Start loading
+    setLoading(true); 
     axios.get(`${API_URL}/api/products`)
       .then(response => {
         if (Array.isArray(response.data)) {
@@ -54,22 +57,32 @@ function App() {
         } else {
             setProducts([]);
         }
-        setLoading(false); // Stop loading on success
+        setLoading(false); 
       })
       .catch(error => {
         console.error("Error loading products:", error);
         setProducts([]); 
-        setLoading(false); // Stop loading on error
+        setLoading(false); 
       });
   }, [API_URL]);
 
-  // Persistent User Session
   useEffect(() => {
     const storedUser = localStorage.getItem("methaUser"); 
     if (storedUser) {
       setCurrentUser(JSON.parse(storedUser)); 
     }
   }, []);
+
+  // ✅ HELPER: Get Categories List
+  const getCategories = () => {
+    const categories = products.map(p => p.category || "General");
+    return ["All", ...new Set(categories)]; // Always start with "All"
+  };
+
+  // ✅ HELPER: Filter Products based on Selection
+  const filteredProducts = selectedCategory === "All" 
+    ? products 
+    : products.filter(p => (p.category || "General") === selectedCategory);
 
   // --- CART LOGIC ---
   const addToCart = (product) => {
@@ -80,9 +93,7 @@ function App() {
     }
     const existingItem = cart.find(item => item._id === product._id);
     if (existingItem) {
-        setCart(cart.map(item => 
-            item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-        ));
+        setCart(cart.map(item => item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item));
         toast.success(`Updated quantity for ${product.name}`);
     } else {
         setCart([...cart, { ...product, quantity: 1 }]);
@@ -91,103 +102,41 @@ function App() {
   };
 
   const updateQuantity = (productId, amount) => {
-    setCart(cart.map(item => {
-        if (item._id === productId) {
-            const newQuantity = item.quantity + amount;
-            return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 };
-        }
-        return item;
-    }));
+    setCart(cart.map(item => { if (item._id === productId) { const newQuantity = item.quantity + amount; return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 }; } return item; }));
   };
 
-  const removeFromCart = (indexToRemove) => {
-    const newCart = cart.filter((_, index) => index !== indexToRemove);
-    setCart(newCart);
-    toast.success("Item removed from cart");
-  };
-
+  const removeFromCart = (indexToRemove) => { setCart(cart.filter((_, index) => index !== indexToRemove)); toast.success("Item removed from cart"); };
   const clearCart = () => { setCart([]); };
 
   // --- WISHLIST LOGIC ---
   const addToWishlist = (product) => {
-    if (!currentUser) {
-        toast.error("Please login to manage your wishlist.");
-        setShowLogin(true);
-        return;
-    }
+    if (!currentUser) { toast.error("Please login to manage your wishlist."); setShowLogin(true); return; }
     const exists = wishlist.find(item => item._id === product._id);
-    if (exists) { 
-        toast("Item already in wishlist");
-    } else { 
-        setWishlist([...wishlist, product]); 
-        toast.success("Added to wishlist"); 
-    }
+    if (exists) { toast("Item already in wishlist"); } else { setWishlist([...wishlist, product]); toast.success("Added to wishlist"); }
   };
 
-  const removeFromWishlist = (productId) => {
-    const newWishlist = wishlist.filter((item) => item._id !== productId);
-    setWishlist(newWishlist);
-    toast.success("Removed from wishlist");
-  };
+  const removeFromWishlist = (productId) => { setWishlist(wishlist.filter((item) => item._id !== productId)); toast.success("Removed from wishlist"); };
 
   // --- AUTHENTICATION LOGIC ---
   const handleAuth = async (e) => {
     e.preventDefault();
-
     if (isLogin) {
-        try {
-            const res = await axios.post(`${API_URL}/api/login`, { email, password });
-            toast.success(res.data.message);
-            setCurrentUser(res.data.username);
-            localStorage.setItem("methaUser", JSON.stringify(res.data.username));
-            setShowLogin(false);
-        } catch (error) { 
-            toast.error(error.response?.data?.message || "Login failed"); 
-        }
-        return;
+        try { const res = await axios.post(`${API_URL}/api/login`, { email, password }); toast.success(res.data.message); setCurrentUser(res.data.username); localStorage.setItem("methaUser", JSON.stringify(res.data.username)); setShowLogin(false); } catch (error) { toast.error(error.response?.data?.message || "Login failed"); } return;
     }
-
     if (!isOtpSent) {
-        try {
-            const res = await axios.post(`${API_URL}/api/send-otp`, { email });
-            toast.success(res.data.message);
-            setIsOtpSent(true); 
-        } catch (error) { 
-            toast.error(error.response?.data?.message || "Failed to send verification email."); 
-        }
+        try { const res = await axios.post(`${API_URL}/api/send-otp`, { email }); toast.success(res.data.message); setIsOtpSent(true); } catch (error) { toast.error(error.response?.data?.message || "Failed to send verification email."); }
     } else {
-        try {
-            const res = await axios.post(`${API_URL}/api/signup`, { username, email, password, otp });
-            toast.success(res.data.message);
-            setCurrentUser(username);
-            localStorage.setItem("methaUser", JSON.stringify(username));
-            setShowLogin(false);
-            setIsOtpSent(false);
-            setOtp("");
-        } catch (error) { 
-            toast.error(error.response?.data?.message || "Invalid verification code."); 
-        }
+        try { const res = await axios.post(`${API_URL}/api/signup`, { username, email, password, otp }); toast.success(res.data.message); setCurrentUser(username); localStorage.setItem("methaUser", JSON.stringify(username)); setShowLogin(false); setIsOtpSent(false); setOtp(""); } catch (error) { toast.error(error.response?.data?.message || "Invalid verification code."); }
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("methaUser"); 
-    setCurrentUser(null);
-    toast.success("Logged out successfully");
-    navigate('/'); 
-  }
+  const handleLogout = () => { localStorage.removeItem("methaUser"); setCurrentUser(null); toast.success("Logged out successfully"); navigate('/'); }
 
   return (
     <div className="app-wrapper">
       <Toaster position="bottom-center" reverseOrder={false} />
 
-      <Navbar 
-        cartCount={cart.length} 
-        wishlistCount={wishlist.length} 
-        setShowLogin={setShowLogin} 
-        currentUser={currentUser}
-        handleLogout={handleLogout}
-      /> 
+      <Navbar cartCount={cart.length} wishlistCount={wishlist.length} setShowLogin={setShowLogin} currentUser={currentUser} handleLogout={handleLogout} /> 
 
       {/* Authentication Modal */}
       {showLogin && (
@@ -195,50 +144,17 @@ function App() {
           <div className="login-box" onClick={(e) => e.stopPropagation()}>
             <button className="close-x-btn" onClick={() => setShowLogin(false)}>×</button>
             <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
-            
             <form onSubmit={handleAuth}>
-              {!isLogin && (
-                  <input type="text" placeholder="Username" required value={username} onChange={(e) => setUsername(e.target.value)}/>
-              )}
+              {!isLogin && <input type="text" placeholder="Username" required value={username} onChange={(e) => setUsername(e.target.value)}/>}
               <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)}/>
-              
               <div className="password-input-container">
                 <input type={showPassword ? "text" : "password"} placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)}/>
-                
-                <span 
-                    className="password-toggle-icon" 
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{ cursor: 'pointer', color: '#666', display: 'flex', alignItems: 'center' }} 
-                >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </span>
+                <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <FaEyeSlash /> : <FaEye />}</span>
               </div>
-
-              {!isLogin && isOtpSent && (
-                  <>
-                    <input type="text" placeholder="Verification Code" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1'}} />
-                    <p style={{fontSize: '12px', color: 'blue', cursor: 'pointer', textAlign: 'right', marginTop: '5px'}} 
-                      onClick={() => setIsOtpSent(false)}>
-                      Change Email / Resend Code
-                    </p>
-                  </>
-              )}
-              
-              <button className="login-submit">
-                {isLogin ? 'Login' : (isOtpSent ? 'Verify & Register' : 'Send Verification Code')}
-              </button>
+              {!isLogin && isOtpSent && <><input type="text" placeholder="Verification Code" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1'}} /><p style={{fontSize: '12px', color: 'blue', cursor: 'pointer', textAlign: 'right'}} onClick={() => setIsOtpSent(false)}>Change Email / Resend Code</p></>}
+              <button className="login-submit">{isLogin ? 'Login' : (isOtpSent ? 'Verify & Register' : 'Send Verification Code')}</button>
             </form>
-
-            <p className="switch-text">
-              {isLogin ? "New user? " : "Already have an account? "}
-              <span onClick={() => {
-                  setIsLogin(!isLogin);
-                  setIsOtpSent(false); 
-                  setOtp(""); 
-              }}>
-                {isLogin ? "Create Account" : "Login"}
-              </span>
-            </p>
+            <p className="switch-text">{isLogin ? "New user? " : "Already have an account? "} <span onClick={() => { setIsLogin(!isLogin); setIsOtpSent(false); setOtp(""); }}>{isLogin ? "Create Account" : "Login"}</span></p>
           </div>
         </div>
       )}
@@ -251,6 +167,25 @@ function App() {
                 </div>
                 <div className="container">
                     {currentUser && <h2 style={{color: '#2c3e50', textAlign:'center'}}>Welcome back, {currentUser}</h2>}
+                    
+                    {/* 👇 NEW: CATEGORY TABS (BUTTONS) 👇 */}
+                    {!loading && (
+                        <div style={{marginTop: '30px'}}>
+                            <h3 style={{marginBottom: '15px', color: '#666'}}>Browse by Category:</h3>
+                            <div className="category-tabs-container">
+                                {getCategories().map(category => (
+                                    <button 
+                                        key={category}
+                                        className={`tab-btn ${selectedCategory === category ? 'active' : ''}`}
+                                        onClick={() => setSelectedCategory(category)}
+                                    >
+                                        {category}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <h2 style={{marginTop: '20px', textAlign: 'center'}}>Featured Collections</h2>
                     <div className="product-grid">
                     
@@ -260,14 +195,15 @@ function App() {
                             <div key={index} className="skeleton-card"></div>
                         ))
                     ) : (
-                        Array.isArray(products) && products.length > 0 ? (
-                            products.map((product) => (
+                        /* ✅ Use 'filteredProducts' instead of 'products' */
+                        filteredProducts.length > 0 ? (
+                            filteredProducts.map((product) => (
                                 <div key={product._id} className="product-card">
                                     <div onClick={() => navigate(`/product/${product._id}`)} style={{cursor: 'pointer'}}>
                                         <img 
                                           src={(product.images && product.images.length > 0) ? product.images[0] : "https://placehold.co/400"} 
                                           alt={product.name} 
-                                          loading="lazy" /* Lazy Load for Speed */
+                                          loading="lazy"
                                           onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }}
                                           style={{ width: '100%', height: '200px', objectFit: 'cover' }}
                                         />
@@ -288,9 +224,10 @@ function App() {
                                 </div>
                             ))
                         ) : (
-                            <p style={{textAlign: 'center', width: '100%', padding: '20px', fontSize: '1.2rem', color: '#666'}}>
-                                No products found.
-                            </p>
+                            <div style={{gridColumn: '1/-1', textAlign: 'center', padding: '40px'}}>
+                                <p style={{fontSize: '18px', color: '#888'}}>No products found in "{selectedCategory}".</p>
+                                <button onClick={() => setSelectedCategory("All")} style={{marginTop: '10px', padding: '8px 16px', background: '#2c3e50', color: 'white', border:'none', borderRadius: '4px', cursor: 'pointer'}}>View All Products</button>
+                            </div>
                         )
                     )}
                     {/* 👆 SKELETON LOGIC END 👆 */}

@@ -73,8 +73,18 @@ let otpStore = {};
 // --- Database Schemas ---
 
 const productSchema = new mongoose.Schema({
-    name: String, price: Number, size: String, material: String, warranty: String, images: [String], image: String, description: String
+    name: String, 
+    price: Number, 
+    size: String, 
+    material: String, 
+    warranty: String, 
+    images: [String], 
+    image: String, 
+    description: String,
+    category: { type: String, default: "General" } // 👈 NEW FIELD
 });
+
+
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 
 const userSchema = new mongoose.Schema({
@@ -206,7 +216,7 @@ app.post('/api/products', async (req, res) => {
         const { name, price, size, material, warranty, images, description } = req.body;
         const newProduct = new Product({
             name, price, size, material, warranty, images: images, 
-            image: (images && images.length > 0) ? images[0] : "", description
+            image: (images && images.length > 0) ? images[0] : "", description,category: category || "General"
         });
         await newProduct.save();
         res.status(201).json({ message: "Product added successfully.", product: newProduct });
@@ -218,8 +228,8 @@ app.put('/api/products/:id', async (req, res) => {
         const { name, price, size, material, warranty, images, description } = req.body;
         const updatedProduct = await Product.findByIdAndUpdate(
             req.params.id, 
-            { name, price, size, material, warranty, images, image: (images && images.length > 0) ? images[0] : "", description }, 
-            { new: true }
+            { name, price, size, material, warranty, images, image: (images && images.length > 0) ? images[0] : "", description, category }, 
+            { new: true }, 
         );
         res.json({ message: "Product details updated successfully.", product: updatedProduct });
     } catch (error) { res.status(500).json({ message: "Failed to update product details." }); }
