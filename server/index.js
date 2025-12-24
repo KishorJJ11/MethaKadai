@@ -21,6 +21,8 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
+// Handle Preflight requests (Browser security check) explicitly
+app.options('*', cors());
 
 // MongoDB Database Connection
 const MONGO_URI = process.env.MONGO_URI;
