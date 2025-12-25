@@ -21,12 +21,11 @@ function App() {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]); 
   
-  // --- AUTH UI STATES ---
+  // Auth States
   const [showLogin, setShowLogin] = useState(false);
   const [authView, setAuthView] = useState("login"); 
   const [showPassword, setShowPassword] = useState(false);
   
-  // --- AUTH DATA STATES ---
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,53 +33,32 @@ function App() {
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
   
-  // --- SYSTEM STATES ---
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   const navigate = useNavigate();
-
-  // API URL
   const API_URL = import.meta.env.DEV ? "http://localhost:5000" : "https://methakadai.onrender.com"; 
 
-  // --- 1. FETCH PRODUCTS ---
   useEffect(() => {
     setLoading(true); 
     axios.get(`${API_URL}/api/products`)
       .then(res => {
-        const data = Array.isArray(res.data) ? res.data : (res.data.products || []);
-        setProducts(data);
+        setProducts(Array.isArray(res.data) ? res.data : (res.data.products || []));
         setLoading(false); 
       })
       .catch(err => { console.error(err); setProducts([]); setLoading(false); });
   }, [API_URL]);
 
-  // --- 2. CHECK SESSION ---
-  useEffect(() => {
-    const storedUser = localStorage.getItem("methaUser"); 
-    if (storedUser) setCurrentUser(JSON.parse(storedUser)); 
-  }, []);
+  useEffect(() => { const storedUser = localStorage.getItem("methaUser"); if (storedUser) setCurrentUser(JSON.parse(storedUser)); }, []);
 
-  // --- 3. RESET FORM ---
   useEffect(() => {
-    if(!showLogin) {
-        setAuthView("login");
-        setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setOtp(""); setIsOtpSent(false);
-    }
+    if(!showLogin) { setAuthView("login"); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setOtp(""); setIsOtpSent(false); }
   }, [showLogin]);
 
-  // --- HELPER FUNCTIONS (UPDATED) ---
-  // Change: "General" ah filter panni remove pannitom. 
-  // Ipo "Coirform", "Fullform" madhiri real categories mattum dhaan varum.
-  const getCategories = () => ["All", ...new Set(products
-    .map(p => p.category || "General")
-    .filter(cat => cat !== "General") 
-  )];
-
+  const getCategories = () => ["All", ...new Set(products.map(p => p.category || "General").filter(cat => cat !== "General"))];
   const filteredProducts = selectedCategory === "All" ? products : products.filter(p => (p.category || "General") === selectedCategory);
 
-  // --- CART & WISHLIST ---
   const addToCart = (p) => {
     if (!currentUser) { toast.error("Login Required"); setShowLogin(true); return; }
     const exist = cart.find(i => i._id === p._id);
@@ -94,58 +72,30 @@ function App() {
   const removeFromWishlist = (id) => setWishlist(wishlist.filter(i => i._id !== id));
   const handleLogout = () => { localStorage.removeItem("methaUser"); setCurrentUser(null); toast.success("Logged out"); navigate('/'); };
 
-  // --- 🔐 MAIN AUTHENTICATION LOGIC ---
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
-
-    // A. LOGIN
     if (authView === "login") {
         try {
             const res = await axios.post(`${API_URL}/api/login`, { email, password });
-            toast.success(res.data.message);
-            setCurrentUser(res.data.username);
-            localStorage.setItem("methaUser", JSON.stringify(res.data.username));
-            setShowLogin(false);
+            toast.success(res.data.message); setCurrentUser(res.data.username);
+            localStorage.setItem("methaUser", JSON.stringify(res.data.username)); setShowLogin(false);
         } catch (error) { toast.error(error.response?.data?.message || "Login Failed"); }
-    }
-
-    // B. SIGNUP
-    else if (authView === "signup") {
+    } else if (authView === "signup") {
         if (!isOtpSent) {
             if(password !== confirmPassword) return toast.error("Passwords do not match");
-            try {
-                await axios.post(`${API_URL}/api/send-otp`, { email });
-                toast.success("OTP Sent!");
-                setIsOtpSent(true);
-            } catch (error) { toast.error(error.response?.data?.message || "Error sending OTP"); }
+            try { await axios.post(`${API_URL}/api/send-otp`, { email }); toast.success("OTP Sent!"); setIsOtpSent(true); } catch (error) { toast.error("Error sending OTP"); }
         } else {
             try {
                 const res = await axios.post(`${API_URL}/api/signup`, { username, email, password, otp });
-                toast.success("Registered!");
-                setCurrentUser(username);
-                localStorage.setItem("methaUser", JSON.stringify(username));
-                setShowLogin(false);
+                toast.success("Registered!"); setCurrentUser(username);
+                localStorage.setItem("methaUser", JSON.stringify(username)); setShowLogin(false);
             } catch (error) { toast.error("Invalid OTP"); }
         }
-    }
-
-    // C. FORGOT PASSWORD (STEP 1: SEND OTP)
-    else if (authView === "forgot_email") {
-        try {
-            await axios.post(`${API_URL}/api/forget-otp`, { email });
-            toast.success("OTP Sent to Email");
-            setAuthView("forgot_reset"); 
-        } catch (error) { toast.error(error.response?.data?.message || "Email not found"); }
-    }
-
-    // D. FORGOT PASSWORD (STEP 2: RESET)
-    else if (authView === "forgot_reset") {
+    } else if (authView === "forgot_email") {
+        try { await axios.post(`${API_URL}/api/forget-otp`, { email }); toast.success("OTP Sent"); setAuthView("forgot_reset"); } catch (error) { toast.error("Email not found"); }
+    } else if (authView === "forgot_reset") {
         if(password !== confirmPassword) return toast.error("Passwords do not match");
-        try {
-            await axios.post(`${API_URL}/api/reset-password`, { email, otp, newPassword: password });
-            toast.success("Password Reset Successful! Please Login.");
-            setAuthView("login"); 
-        } catch (error) { toast.error(error.response?.data?.message || "Invalid OTP"); }
+        try { await axios.post(`${API_URL}/api/reset-password`, { email, otp, newPassword: password }); toast.success("Reset Successful"); setAuthView("login"); } catch (error) { toast.error("Invalid OTP"); }
     }
   };
 
@@ -154,80 +104,39 @@ function App() {
       <Toaster position="bottom-center" />
       <Navbar cartCount={cart.length} wishlistCount={wishlist.length} setShowLogin={setShowLogin} currentUser={currentUser} handleLogout={handleLogout} /> 
 
-      {/* 🔐 AUTH MODAL */}
+      {/* LOGIN POPUP */}
       {showLogin && (
         <div className="login-overlay" onClick={() => setShowLogin(false)}>
           <div className="login-box" onClick={(e) => e.stopPropagation()}>
             <button className="close-x-btn" onClick={() => setShowLogin(false)}>×</button>
-            
-            <h2>
-                {authView === 'login' && 'Welcome Back'}
-                {authView === 'signup' && 'Create Account'}
-                {authView.includes('forgot') && 'Reset Password'}
-            </h2>
-            
+            <h2>{authView === 'login' && 'Welcome Back'}{authView === 'signup' && 'Create Account'}{authView.includes('forgot') && 'Reset Password'}</h2>
             <form onSubmit={handleAuthSubmit}>
-              
-              {/* 1. Username (Only Signup) */}
-              {authView === 'signup' && (
-                  <input type="text" placeholder="Username" required value={username} onChange={(e) => setUsername(e.target.value)}/>
-              )}
-
-              {/* 2. Email (All Views) */}
+              {authView === 'signup' && <input type="text" placeholder="Username" required value={username} onChange={(e) => setUsername(e.target.value)}/>}
               <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={authView === 'forgot_reset' || (authView === 'signup' && isOtpSent)} />
-
-              {/* 3. Password (Not in Forgot Step 1) */}
               {authView !== 'forgot_email' && (
                 <div className="password-input-container">
-                    <input type={showPassword ? "text" : "password"} placeholder={authView === 'forgot_reset' ? "New Password" : "Password"} required value={password} onChange={(e) => setPassword(e.target.value)}/>
+                    <input type={showPassword ? "text" : "password"} placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)}/>
                     <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <FaEyeSlash /> : <FaEye />}</span>
                 </div>
               )}
-
-              {/* 4. Confirm Password (Signup & Reset) */}
-              {(authView === 'signup' || authView === 'forgot_reset') && (
-                  <input type="password" placeholder="Confirm Password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={{marginTop:'10px'}} />
-              )}
-
-              {/* 5. OTP (Signup Step 2 & Reset Step 2) */}
-              {((authView === 'signup' && isOtpSent) || authView === 'forgot_reset') && (
-                  <input type="text" placeholder="Verification Code (OTP)" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1', marginTop:'10px'}} />
-              )}
-              
-              {/* 6. Forgot Password Link */}
-              {authView === 'login' && (
-                  <p style={{textAlign:'right', fontSize:'12px', color:'blue', cursor:'pointer'}} onClick={() => setAuthView('forgot_email')}>Forgot Password?</p>
-              )}
-
-              <button className="login-submit" style={{marginTop:'15px'}}>
-                {authView === 'login' && 'Login'}
-                {authView === 'signup' && (isOtpSent ? 'Register' : 'Get OTP')}
-                {authView === 'forgot_email' && 'Send OTP'}
-                {authView === 'forgot_reset' && 'Change Password'}
-              </button>
+              {(authView === 'signup' || authView === 'forgot_reset') && <input type="password" placeholder="Confirm Password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={{marginTop:'10px'}} />}
+              {((authView === 'signup' && isOtpSent) || authView === 'forgot_reset') && <input type="text" placeholder="OTP" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{marginTop:'10px', borderColor:'#2ecc71'}} />}
+              {authView === 'login' && <p style={{textAlign:'right', fontSize:'12px', color:'blue', cursor:'pointer'}} onClick={() => setAuthView('forgot_email')}>Forgot Password?</p>}
+              <button className="login-submit" style={{marginTop:'15px'}}>{authView === 'login' ? 'Login' : authView === 'forgot_email' ? 'Send OTP' : 'Submit'}</button>
             </form>
-
-            <p className="switch-text">
-                {authView === 'login' ? (
-                    <>New here? <span onClick={() => setAuthView('signup')}>Create Account</span></>
-                ) : (
-                    <span onClick={() => setAuthView('login')}><FaArrowLeft /> Back to Login</span>
-                )}
-            </p>
+            <p className="switch-text">{authView === 'login' ? <span onClick={() => setAuthView('signup')}>Create Account</span> : <span onClick={() => setAuthView('login')}>Back to Login</span>}</p>
           </div>
         </div>
       )}
 
-      {/* --- ROUTES --- */}
+      {/* ROUTES */}
       <Routes>
         <Route path="/" element={
             <>
-            
                 <div className="sale-banner"><p className="scrolling-text">Exclusive New Year Sale: 50% Off!</p></div>
                 <div className="container">
                 {currentUser && <h2 style={{textAlign:'center'}}>Welcome, {currentUser}</h2>}
                 
-                {/* Category Buttons */}
                 {!loading && (
                     <div style={{marginTop: '30px'}}>
                         <h3 style={{marginBottom: '10px'}}>Categories:</h3>
@@ -239,22 +148,44 @@ function App() {
                     </div>
                 )}
 
-                {/* Product Grid */}
                 <div className="product-grid" style={{marginTop:'20px'}}>
-                    {loading ? (
-                        Array.from({length:6}).map((_,i)=><div key={i} className="skeleton-card"></div>)
-                    ) : (
+                    {loading ? (Array.from({length:6}).map((_,i)=><div key={i} className="skeleton-card"></div>)) : (
                         filteredProducts.length > 0 ? (
-                            filteredProducts.map(p => (
+                            filteredProducts.map(p => {
+                                // 🔥 HOME PAGE PRICE CALCULATION 🔥
+                                const sellingPrice = Number(p.price);
+                                const mrp = (p.mrp && Number(p.mrp) > sellingPrice) ? Number(p.mrp) : sellingPrice;
+                                const discount = mrp > sellingPrice ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
+
+                                return (
                                 <div key={p._id} className="product-card">
-                                    <div onClick={() => navigate(`/product/${p._id}`)} style={{cursor:'pointer'}}>
+                                    <div onClick={() => navigate(`/product/${p._id}`)} style={{cursor:'pointer', position:'relative'}}>
                                         <img src={(p.images && p.images[0]) || "https://placehold.co/400"} alt={p.name} loading="lazy" style={{width:'100%', height:'200px', objectFit:'cover'}} onError={(e)=>{e.target.src="https://placehold.co/400"}}/>
+                                        
+                                        {/* DISCOUNT BADGE ON IMAGE */}
+                                        {discount > 0 && (
+                                            <span style={{
+                                                position: 'absolute', top: '10px', left: '10px',
+                                                background: '#ff4d4d', color: 'white', 
+                                                padding: '3px 8px', borderRadius: '4px', 
+                                                fontSize: '11px', fontWeight: 'bold'
+                                            }}>
+                                                {discount}% OFF
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="card-details">
                                         <h3>{p.name}</h3>
                                         <p>{p.size}</p>
+                                        
+                                        {/* PRICE SECTION */}
                                         <div className="actions-row">
-                                            <span className="price">₹{p.price.toLocaleString()}</span>
+                                            <div style={{display:'flex', flexDirection:'column'}}>
+                                                {mrp > sellingPrice && (
+                                                    <span style={{textDecoration: 'line-through', color: '#888', fontSize: '12px'}}>₹{mrp.toLocaleString()}</span>
+                                                )}
+                                                <span className="price">₹{sellingPrice.toLocaleString()}</span>
+                                            </div>
                                             <div className="buttons-group">
                                                 <button className="wishlist-btn" onClick={() => addToWishlist(p)}>&hearts;</button>
                                                 <button className="cart-btn" onClick={() => addToCart(p)}>Add</button>
@@ -262,13 +193,8 @@ function App() {
                                         </div>
                                     </div>
                                 </div>
-                            ))
-                        ) : (
-                            <div style={{gridColumn: '1/-1', textAlign: 'center', padding: '40px'}}>
-                                <p style={{fontSize: '18px', color: '#888'}}>No products found in "{selectedCategory}".</p>
-                                <button onClick={() => setSelectedCategory("All")} style={{marginTop: '10px', padding: '8px 16px', background: '#2c3e50', color: 'white', border:'none', borderRadius: '4px', cursor: 'pointer'}}>View All Products</button>
-                            </div>
-                        )
+                            )})
+                        ) : (<div style={{gridColumn: '1/-1', textAlign: 'center', padding: '40px'}}><p>No products found.</p><button onClick={() => setSelectedCategory("All")}>View All</button></div>)
                     )}
                 </div>
             </div>
@@ -283,7 +209,6 @@ function App() {
         <Route path="/myorders" element={<MyOrders currentUser={currentUser} />} />
         <Route path="/admin" element={<AdminOrders />} />
       </Routes>
-
       <Footer />
     </div>
   );
