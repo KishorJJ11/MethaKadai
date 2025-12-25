@@ -12,6 +12,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 
 // --- 🔥 THE FIX STARTS HERE 🔥 ---
+// Using Manual Headers instead of 'cors' package to force acceptance of ANY URL.
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (origin) {
@@ -25,17 +26,19 @@ app.use((req, res, next) => {
     }
     next();
 });
+// --- 🔥 THE FIX ENDS HERE 🔥 ---
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// MongoDB Connection
+// MongoDB Database Connection
 const MONGO_URI = process.env.MONGO_URI;
+
 mongoose.connect(MONGO_URI)
 .then(() => console.log("MongoDB Connection: Success"))
 .catch(err => console.error("MongoDB Connection: Error", err));
 
-// Mail Server
+// Mail Server Configuration
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 2525,             
@@ -47,44 +50,8 @@ const transporter = nodemailer.createTransport({
 
 let otpStore = {}; 
 
-// --- HELPER: Professional Email Template ---
-const getEmailTemplate = (title, message, otp, footerText) => {
-    return `
-    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-        
-        <div style="background-color: #2c3e50; padding: 20px; text-align: center;">
-            <h1 style="color: #f1c40f; margin: 0; font-size: 24px; letter-spacing: 1px;">MethaKadai </h1>
-            <p style="color: #ecf0f1; font-size: 12px; margin-top: 5px; text-transform: uppercase;">Quality Comfort Delivered</p>
-        </div>
+// --- Database Schemas ---
 
-        <div style="padding: 30px 20px; text-align: center; color: #333;">
-            <h2 style="color: #2c3e50; font-size: 20px; margin-bottom: 10px;">${title}</h2>
-            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 25px;">
-                ${message}
-            </p>
-            
-            <div style="background-color: #f8f9fa; border: 2px dashed #f1c40f; border-radius: 8px; padding: 15px; display: inline-block; margin-bottom: 25px;">
-                <span style="font-size: 32px; font-weight: bold; color: #2c3e50; letter-spacing: 5px; font-family: monospace;">${otp}</span>
-            </div>
-            
-            <p style="font-size: 13px; color: #999; margin-top: 10px;">
-                This code is valid for <strong>10 minutes</strong>.<br>
-                If you did not request this, please ignore this email.
-            </p>
-        </div>
-
-        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; border-top: 1px solid #eee;">
-            <p style="font-size: 11px; color: #aaa; margin: 0;">
-                &copy; 2025 MethaKadai. All rights reserved.<br>
-                Salem, Tamil Nadu, India.
-            </p>
-            <p style="font-size: 11px; color: #aaa; margin-top: 5px;">${footerText}</p>
-        </div>
-    </div>
-    `;
-};
-
-// --- Schemas ---
 const productSchema = new mongoose.Schema({
     name: String, price: Number, size: String, material: String, warranty: String, images: [String], image: String, description: String,
     category: { type: String, default: "General" }
@@ -104,13 +71,9 @@ const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 // Admin Account
 const createAdminAccount = async () => {
     try {
-
-        const adminEmail = process.env.ADMIN_EMAIL; // Fallback if env missing
-        const adminPassword = process.env.ADMIN_PASSWORD;
-
-        const adminExists = await User.findOne({ username: 'Admin' });
+        const adminExists = await User.findOne({ username: 'admin' });
         if (!adminExists) {
-            const newAdmin = new User({ username: 'Admin', email: adminEmail, password: adminPassword, phone: '9876543210', address: 'MethaKadai Head Office, Tamil Nadu.', profilePic: '' });
+            const newAdmin = new User({ username: 'admin', email: 'admin@gmail.com', password: 'admin123', phone: '9876543210', address: 'MethaKadai Head Office, Tamil Nadu.', profilePic: '' });
             await newAdmin.save();
         }
     } catch (error) { console.error("Admin error", error); }
@@ -120,7 +83,7 @@ createAdminAccount();
 
 // --- API Endpoints ---
 
-// 1. Send OTP (Signup) - WITH PROFESSIONAL TEMPLATE
+// 1. Send OTP (Signup)
 app.post('/api/send-otp', async (req, res) => {
     const { email } = req.body;
     try {
@@ -131,21 +94,14 @@ app.post('/api/send-otp', async (req, res) => {
         otpStore[email] = otp; 
 
         await transporter.sendMail({
-            from: `"MethaKadai Security" <kishorjj05@gmail.com>`, 
-            to: email, 
-            subject: 'Verify your Email - MethaKadai', 
-            html: getEmailTemplate(
-                "Welcome to MethaKadai!", 
-                "Thank you for joining us. Please use the verification code below to complete your registration.",
-                otp,
-                "Welcome to the family!"
-            )
+            from: `"MethaKadai Security" <kishorjj05@gmail.com>`, to: email, subject: 'Verification Code', 
+            html: `<h1>Your Signup OTP is: ${otp}</h1>`
         });
         res.json({ message: "Verification code sent." });
     } catch (error) { res.status(500).json({ message: "Email failed." }); }
 });
 
-// 1.1 Send OTP (Forgot Password) - WITH PROFESSIONAL TEMPLATE
+// 1.1 ✅ NEW: Send OTP (Forgot Password)
 app.post('/api/forget-otp', async (req, res) => {
     const { email } = req.body;
     try {
@@ -156,15 +112,8 @@ app.post('/api/forget-otp', async (req, res) => {
         otpStore[email] = otp; 
 
         await transporter.sendMail({
-            from: `"MethaKadai Security" <kishorjj05@gmail.com>`, 
-            to: email, 
-            subject: 'Password Reset Request', 
-            html: getEmailTemplate(
-                "Reset Your Password", 
-                "We received a request to reset your password. Use the code below to set a new password securely.",
-                otp,
-                "Secure Account Alert"
-            )
+            from: `"MethaKadai Security" <kishorjj05@gmail.com>`, to: email, subject: 'Password Reset Code', 
+            html: `<h1>Your Reset OTP is: ${otp}</h1><p>Do not share this.</p>`
         });
         res.json({ message: "OTP sent to your email." });
     } catch (error) { res.status(500).json({ message: "Email failed." }); }
@@ -182,7 +131,7 @@ app.post('/api/signup', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Error creating account." }); }
 });
 
-// 2.1 Reset Password
+// 2.1 ✅ NEW: Reset Password
 app.post('/api/reset-password', async (req, res) => {
     const { email, password, otp } = req.body;
     if (!otpStore[email] || otpStore[email] !== otp) return res.status(400).json({ message: "Invalid verification code." });
@@ -218,6 +167,17 @@ app.put('/api/orders/:id/cancel', async (req, res) => { try { const o = await Or
 
 // Seed
 app.get('/api/seed', async (req, res) => { try { const c = await Product.countDocuments(); if(c===0) { await Product.insertMany([{name:"Mattress 1", price:10000, size:"King", material:"Foam", images:["https://placehold.co/400"]}]); res.json({message:"Seeded"}); } else { res.json({message:"Skipped"}); } } catch (e) { res.status(500).json({ error: e.message }); } });
+
+
+// Health Check Route for Cron-job
+app.get('/ping', (req, res) => {
+    res.status(200).send('Server is awake! 🟢');
+});
+
+// Or if you want to handle the main URL
+app.get('/', (req, res) => {
+    res.send('Methakadai API is running...');
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => { console.log(`Server active on port ${PORT}`); });

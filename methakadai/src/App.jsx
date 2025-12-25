@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Routes, Route, useNavigate } from 'react-router-dom'; 
 import { Toaster, toast } from 'react-hot-toast';
-import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa'; 
+import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa'; // Added FaArrowLeft
 
 import Navbar from './components/Navbar';
 import Cart from './components/Cart';
@@ -23,14 +23,14 @@ function App() {
   
   // --- AUTH UI STATES ---
   const [showLogin, setShowLogin] = useState(false);
-  const [authView, setAuthView] = useState("login");
+  const [authView, setAuthView] = useState("login"); // 'login' | 'signup' | 'forgot_email' | 'forgot_reset'
   const [showPassword, setShowPassword] = useState(false);
   
   // --- AUTH DATA STATES ---
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); // ✅ New: Confirm Password
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
   
@@ -41,6 +41,7 @@ function App() {
 
   const navigate = useNavigate();
 
+  // API URL
   const API_URL = import.meta.env.DEV ? "http://localhost:5000" : "https://methakadai.onrender.com"; 
 
   // --- 1. FETCH PRODUCTS ---
@@ -70,18 +71,8 @@ function App() {
   }, [showLogin]);
 
   // --- HELPER FUNCTIONS ---
-  
-  // ✅ UPDATE: Hide "General" from Tabs
-  const getCategories = () => {
-    const categories = products.map(p => p.category || "General");
-    const uniqueCategories = [...new Set(categories)];
-    // Filter out 'General' so it doesn't show as a tab
-    return ["All", ...uniqueCategories.filter(cat => cat !== "General")];
-  };
-
-  const filteredProducts = selectedCategory === "All" 
-    ? products 
-    : products.filter(p => (p.category || "General") === selectedCategory);
+  const getCategories = () => ["All", ...new Set(products.map(p => p.category || "General"))];
+  const filteredProducts = selectedCategory === "All" ? products : products.filter(p => (p.category || "General") === selectedCategory);
 
   // --- CART & WISHLIST ---
   const addToCart = (p) => {
@@ -101,6 +92,7 @@ function App() {
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
 
+    // A. LOGIN
     if (authView === "login") {
         try {
             const res = await axios.post(`${API_URL}/api/login`, { email, password });
@@ -110,6 +102,8 @@ function App() {
             setShowLogin(false);
         } catch (error) { toast.error(error.response?.data?.message || "Login Failed"); }
     }
+
+    // B. SIGNUP
     else if (authView === "signup") {
         if (!isOtpSent) {
             if(password !== confirmPassword) return toast.error("Passwords do not match");
@@ -128,19 +122,23 @@ function App() {
             } catch (error) { toast.error("Invalid OTP"); }
         }
     }
+
+    // C. FORGOT PASSWORD (STEP 1: SEND OTP)
     else if (authView === "forgot_email") {
         try {
             await axios.post(`${API_URL}/api/forget-otp`, { email });
             toast.success("OTP Sent to Email");
-            setAuthView("forgot_reset"); 
+            setAuthView("forgot_reset"); // Move to Step 2
         } catch (error) { toast.error(error.response?.data?.message || "Email not found"); }
     }
+
+    // D. FORGOT PASSWORD (STEP 2: RESET)
     else if (authView === "forgot_reset") {
         if(password !== confirmPassword) return toast.error("Passwords do not match");
         try {
             await axios.post(`${API_URL}/api/reset-password`, { email, otp, newPassword: password });
             toast.success("Password Reset Successful! Please Login.");
-            setAuthView("login"); 
+            setAuthView("login"); // Go back to login
         } catch (error) { toast.error(error.response?.data?.message || "Invalid OTP"); }
     }
   };
@@ -163,12 +161,16 @@ function App() {
             </h2>
             
             <form onSubmit={handleAuthSubmit}>
+              
+              {/* 1. Username (Only Signup) */}
               {authView === 'signup' && (
                   <input type="text" placeholder="Username" required value={username} onChange={(e) => setUsername(e.target.value)}/>
               )}
 
+              {/* 2. Email (All Views) */}
               <input type="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={authView === 'forgot_reset' || (authView === 'signup' && isOtpSent)} />
 
+              {/* 3. Password (Not in Forgot Step 1) */}
               {authView !== 'forgot_email' && (
                 <div className="password-input-container">
                     <input type={showPassword ? "text" : "password"} placeholder={authView === 'forgot_reset' ? "New Password" : "Password"} required value={password} onChange={(e) => setPassword(e.target.value)}/>
@@ -176,14 +178,17 @@ function App() {
                 </div>
               )}
 
+              {/* 4. Confirm Password (Signup & Reset) */}
               {(authView === 'signup' || authView === 'forgot_reset') && (
                   <input type="password" placeholder="Confirm Password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={{marginTop:'10px'}} />
               )}
 
+              {/* 5. OTP (Signup Step 2 & Reset Step 2) */}
               {((authView === 'signup' && isOtpSent) || authView === 'forgot_reset') && (
                   <input type="text" placeholder="Verification Code (OTP)" required value={otp} onChange={(e) => setOtp(e.target.value)} style={{borderColor: '#2ecc71', backgroundColor: '#eafaf1', marginTop:'10px'}} />
               )}
               
+              {/* 6. Forgot Password Link */}
               {authView === 'login' && (
                   <p style={{textAlign:'right', fontSize:'12px', color:'blue', cursor:'pointer'}} onClick={() => setAuthView('forgot_email')}>Forgot Password?</p>
               )}
@@ -210,13 +215,12 @@ function App() {
       {/* --- ROUTES --- */}
       <Routes>
         <Route path="/" element={
-          <>
-            <div className="sale-banner"><p className="scrolling-text">Exclusive New Year Sale: 50% Exchange offer on Mattresses -- Limited Time Offer!</p></div>
-              <div className="container">
+            <div className="container">
+                <div className="sale-banner"><p className="scrolling-text">Exclusive New Year Sale: 50% Off!</p></div>
                 {currentUser && <h2 style={{textAlign:'center'}}>Welcome, {currentUser}</h2>}
                 
-                {/* Category Buttons - Only shows tabs if more than just "All" exists */}
-                {!loading && getCategories().length > 1 && (
+                {/* Category Buttons */}
+                {!loading && (
                     <div style={{marginTop: '30px'}}>
                         <h3 style={{marginBottom: '10px'}}>Categories:</h3>
                         <div className="category-tabs-container">
@@ -260,7 +264,6 @@ function App() {
                     )}
                 </div>
             </div>
-          </>
         } />
         
         <Route path="/product/:id" element={<ProductDetails addToCart={addToCart} />} />
