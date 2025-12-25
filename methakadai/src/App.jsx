@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Routes, Route, useNavigate } from 'react-router-dom'; 
 import { Toaster, toast } from 'react-hot-toast';
-import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa'; // Added FaArrowLeft
+import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa'; 
 
 import Navbar from './components/Navbar';
 import Cart from './components/Cart';
@@ -23,14 +23,14 @@ function App() {
   
   // --- AUTH UI STATES ---
   const [showLogin, setShowLogin] = useState(false);
-  const [authView, setAuthView] = useState("login"); // 'login' | 'signup' | 'forgot_email' | 'forgot_reset'
+  const [authView, setAuthView] = useState("login"); 
   const [showPassword, setShowPassword] = useState(false);
   
   // --- AUTH DATA STATES ---
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // ✅ New: Confirm Password
+  const [confirmPassword, setConfirmPassword] = useState(""); 
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
   
@@ -70,8 +70,14 @@ function App() {
     }
   }, [showLogin]);
 
-  // --- HELPER FUNCTIONS ---
-  const getCategories = () => ["All", ...new Set(products.map(p => p.category || "General"))];
+  // --- HELPER FUNCTIONS (UPDATED) ---
+  // Change: "General" ah filter panni remove pannitom. 
+  // Ipo "Coirform", "Fullform" madhiri real categories mattum dhaan varum.
+  const getCategories = () => ["All", ...new Set(products
+    .map(p => p.category || "General")
+    .filter(cat => cat !== "General") 
+  )];
+
   const filteredProducts = selectedCategory === "All" ? products : products.filter(p => (p.category || "General") === selectedCategory);
 
   // --- CART & WISHLIST ---
@@ -128,7 +134,7 @@ function App() {
         try {
             await axios.post(`${API_URL}/api/forget-otp`, { email });
             toast.success("OTP Sent to Email");
-            setAuthView("forgot_reset"); // Move to Step 2
+            setAuthView("forgot_reset"); 
         } catch (error) { toast.error(error.response?.data?.message || "Email not found"); }
     }
 
@@ -138,7 +144,7 @@ function App() {
         try {
             await axios.post(`${API_URL}/api/reset-password`, { email, otp, newPassword: password });
             toast.success("Password Reset Successful! Please Login.");
-            setAuthView("login"); // Go back to login
+            setAuthView("login"); 
         } catch (error) { toast.error(error.response?.data?.message || "Invalid OTP"); }
     }
   };
@@ -215,8 +221,10 @@ function App() {
       {/* --- ROUTES --- */}
       <Routes>
         <Route path="/" element={
-            <div className="container">
+            <>
+            
                 <div className="sale-banner"><p className="scrolling-text">Exclusive New Year Sale: 50% Off!</p></div>
+                <div className="container">
                 {currentUser && <h2 style={{textAlign:'center'}}>Welcome, {currentUser}</h2>}
                 
                 {/* Category Buttons */}
@@ -264,6 +272,7 @@ function App() {
                     )}
                 </div>
             </div>
+            </>
         } />
         
         <Route path="/product/:id" element={<ProductDetails addToCart={addToCart} />} />

@@ -11,8 +11,7 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 
-// --- 🔥 THE FIX STARTS HERE 🔥 ---
-// Using Manual Headers instead of 'cors' package to force acceptance of ANY URL.
+// --- 🔥 THE FIX: CORS MANUAL HEADERS 🔥 ---
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (origin) {
@@ -26,7 +25,6 @@ app.use((req, res, next) => {
     }
     next();
 });
-// --- 🔥 THE FIX ENDS HERE 🔥 ---
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -51,7 +49,6 @@ const transporter = nodemailer.createTransport({
 let otpStore = {}; 
 
 // --- Database Schemas ---
-
 const productSchema = new mongoose.Schema({
     name: String, price: Number, size: String, material: String, warranty: String, images: [String], image: String, description: String,
     category: { type: String, default: "General" }
@@ -101,7 +98,7 @@ app.post('/api/send-otp', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Email failed." }); }
 });
 
-// 1.1 ✅ NEW: Send OTP (Forgot Password)
+// 1.1 Send OTP (Forgot Password)
 app.post('/api/forget-otp', async (req, res) => {
     const { email } = req.body;
     try {
@@ -131,7 +128,7 @@ app.post('/api/signup', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Error creating account." }); }
 });
 
-// 2.1 ✅ NEW: Reset Password
+// 2.1 Reset Password
 app.post('/api/reset-password', async (req, res) => {
     const { email, password, otp } = req.body;
     if (!otpStore[email] || otpStore[email] !== otp) return res.status(400).json({ message: "Invalid verification code." });
@@ -146,10 +143,25 @@ app.post('/api/reset-password', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Error updating password." }); }
 });
 
-// 3. Products
+// 3. Products Routes
 app.get('/api/products', async (req, res) => { try { const p = await Product.find(); res.json(p); } catch (e) { res.status(500).json({ message: "Error" }); } });
 app.get('/api/products/:id', async (req, res) => { try { const p = await Product.findById(req.params.id); if (!p) return res.status(404).json({ message: "Not found" }); res.json(p); } catch (e) { res.status(500).json({ message: "Error" }); } });
-app.post('/api/products', async (req, res) => { try { const newP = new Product({...req.body, image: req.body.images?.[0] || ""}); await newP.save(); res.status(201).json({ message: "Added", product: newP }); } catch (e) { res.status(500).json({ message: "Error" }); } });
+app.post('/api/products', async (req, res) => { 
+    try { 
+        // Ensure category is set if missing
+        const productData = {
+            ...req.body,
+            category: req.body.category || "General",
+            image: req.body.images?.[0] || ""
+        };
+        const newP = new Product(productData); 
+        await newP.save(); 
+        res.status(201).json({ message: "Added", product: newP }); 
+    } catch (e) { 
+        console.error("Backend Error adding product:", e); // Log error for debugging
+        res.status(500).json({ message: "Error adding product" }); 
+    } 
+});
 app.put('/api/products/:id', async (req, res) => { try { const p = await Product.findByIdAndUpdate(req.params.id, {...req.body, image: req.body.images?.[0] || ""}, {new:true}); res.json({message:"Updated", product:p}); } catch (e) { res.status(500).json({message:"Error"}); } });
 app.delete('/api/products/:id', async (req, res) => { try { await Product.findByIdAndDelete(req.params.id); res.json({message:"Deleted"}); } catch (e) { res.status(500).json({message:"Error"}); } });
 
@@ -168,16 +180,9 @@ app.put('/api/orders/:id/cancel', async (req, res) => { try { const o = await Or
 // Seed
 app.get('/api/seed', async (req, res) => { try { const c = await Product.countDocuments(); if(c===0) { await Product.insertMany([{name:"Mattress 1", price:10000, size:"King", material:"Foam", images:["https://placehold.co/400"]}]); res.json({message:"Seeded"}); } else { res.json({message:"Skipped"}); } } catch (e) { res.status(500).json({ error: e.message }); } });
 
-
-// Health Check Route for Cron-job
-app.get('/ping', (req, res) => {
-    res.status(200).send('Server is awake! 🟢');
-});
-
-// Or if you want to handle the main URL
-app.get('/', (req, res) => {
-    res.send('Methakadai API is running...');
-});
+// Health Check
+app.get('/ping', (req, res) => { res.status(200).send('Server is awake! 🟢'); });
+app.get('/', (req, res) => { res.send('Methakadai API is running...'); });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => { console.log(`Server active on port ${PORT}`); });

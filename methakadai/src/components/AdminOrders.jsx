@@ -13,7 +13,7 @@ const AdminOrders = () => {
   // View Order Details State
   const [selectedOrder, setSelectedOrder] = useState(null); 
 
-  // ✅ ADDED "category" to State
+  // ✅ State for New Product
   const [newProduct, setNewProduct] = useState({
     name: '', price: '', size: '', material: '', warranty: '', 
     images: '', description: '', category: '' 
@@ -21,10 +21,18 @@ const AdminOrders = () => {
 
   const [loading, setLoading] = useState(false);
   
-  // Smart API URL
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // 🔥🔥🔥 THE ULTIMATE URL FIX 🔥🔥🔥
+  // Indha logic padi: 
+  // 1. Local la irundha "http://localhost:5000" eduthukkum.
+  // 2. Live (Render) la irundha "https://methakadai.onrender.com" eduthukkum.
+  // .env file ah namba theva illa.
+  const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:5000" 
+    : "https://methakadai.onrender.com";
 
   useEffect(() => {
+    // Debugging log to check connection
+    console.log("Connected to Backend at:", API_URL);
     fetchOrders();
     fetchProducts();
   }, []);
@@ -32,11 +40,7 @@ const AdminOrders = () => {
   const fetchOrders = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/orders`);
-      if (Array.isArray(res.data)) {
-        setOrders(res.data);
-      } else {
-        setOrders([]);
-      }
+      setOrders(Array.isArray(res.data) ? res.data : []);
     } catch (err) { 
         console.error("Error fetching orders:", err);
         setOrders([]); 
@@ -46,11 +50,7 @@ const AdminOrders = () => {
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/products`);
-      if (Array.isArray(res.data)) {
-        setProducts(res.data);
-      } else {
-        setProducts([]);
-      }
+      setProducts(Array.isArray(res.data) ? res.data : []);
     } catch (err) { 
         console.error("Error fetching products:", err);
         setProducts([]); 
@@ -88,7 +88,7 @@ const AdminOrders = () => {
         warranty: product.warranty,
         images: imagesString,
         description: product.description,
-        category: product.category || "" // ✅ Populate Category
+        category: product.category || "General" 
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -98,12 +98,23 @@ const AdminOrders = () => {
     setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
   };
 
+  // 🔥 SUBMIT HANDLER
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
+    // 1. Process Images
     const imageArray = newProduct.images.split(',').map(url => url.trim()).filter(url => url !== ""); 
-    const productToSend = { ...newProduct, images: imageArray }; 
+
+    // 2. Format Data (Convert Price to Number)
+    const productToSend = { 
+        ...newProduct, 
+        price: Number(newProduct.price), // Convert String to Number
+        images: imageArray,
+        category: newProduct.category || "General" // Ensure Category isn't empty
+    }; 
+
+    console.log("Attempting to submit to:", `${API_URL}/api/products`); // Debug Log
 
     try {
         if (editId) {
@@ -114,11 +125,12 @@ const AdminOrders = () => {
             await axios.post(`${API_URL}/api/products`, productToSend);
             toast.success('Product added successfully');
         }
+        // Reset Form
         setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
         fetchProducts();
     } catch (error) {
-        console.error(error);
-        toast.error('Operation failed. Please try again.');
+        console.error("Backend Error:", error);
+        toast.error(error.response?.data?.message || 'Connection Failed! Ensure Backend is running on port 5000.');
     }
     setLoading(false);
   };
@@ -134,6 +146,8 @@ const AdminOrders = () => {
   return (
     <div className="admin-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
       <h1>Admin Dashboard</h1>
+      {/* Debug Info */}
+      <p style={{fontSize:'10px', color:'#888', textAlign:'right'}}>Connected to: {API_URL}</p>
 
       {/* --- SECTION 1: ADD / EDIT PRODUCT --- */}
       <div className="add-product-section" style={{ background: '#f9f9f9', padding: '20px', borderRadius: '10px', marginBottom: '40px', border: editId ? '2px solid #ffc107' : '1px solid #ddd' }}>
@@ -145,29 +159,29 @@ const AdminOrders = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
           
-          {/* ✅ NEW CATEGORY SECTION */}
+          {/* ✅ CATEGORY UI */}
           <div style={{gridColumn: 'span 2', background: '#e9ecef', padding: '10px', borderRadius: '5px', border: '1px dashed #ced4da'}}>
-             <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#495057'}}>Product Folder / Category:</label>
+             <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#495057'}}>Product Category:</label>
              <div style={{display: 'flex', gap: '10px'}}>
-                 {/* Dropdown to select existing folders */}
                  <select 
                     onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                    value="" 
                     style={{padding: '10px', borderRadius: '4px', border: '1px solid #ced4da', flex: 1}}
                  >
-                     <option value="">-- Choose Existing Folder --</option>
+                     <option value="" disabled>-- Select Existing --</option>
                      {existingCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                  </select>
 
-                 {/* Input to type new folder name */}
                  <input 
                     name="category" 
-                    placeholder="OR Type New Category Name (e.g. Pillows)" 
+                    placeholder="Type Category Name (e.g. Pillows)" 
                     value={newProduct.category} 
                     onChange={handleChange} 
                     required 
                     style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ced4da', flex: 1.5, fontWeight: 'bold' }} 
                  />
              </div>
+             <small style={{color: '#666', marginTop:'5px', display:'block'}}>Selected Category: <strong>{newProduct.category || "None"}</strong></small>
           </div>
 
           <input name="name" placeholder="Product Name" value={newProduct.name} onChange={handleChange} required style={{ padding: '10px' }} />
@@ -192,7 +206,6 @@ const AdminOrders = () => {
           {Array.isArray(products) && products.length > 0 ? (
             products.map(p => (
                 <div key={p._id} style={{ border: '1px solid #ddd', padding: '15px', minWidth: '220px', borderRadius: '8px', background: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                {/* ✅ Show Category Badge */}
                 <span style={{background: '#6c757d', color: 'white', fontSize: '10px', padding: '3px 8px', borderRadius: '10px', textTransform: 'uppercase'}}>{p.category || "General"}</span>
 
                 <img 
@@ -282,7 +295,7 @@ const AdminOrders = () => {
         )}
       </div>
 
-      {/* --- MODAL POPUP (DETAILS VIEW) --- */}
+      {/* --- MODAL POPUP --- */}
       {selectedOrder && (
         <div style={{
             position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 

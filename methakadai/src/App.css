@@ -338,3 +338,8 @@
   border-color: #2c3e50;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
+
+  .container {
+    width: 95%;
+    margin: 10px auto;
+  }
