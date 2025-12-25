@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
+import { useParams, useNavigate } from 'react-router-dom'; 
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
 import '../Styles/ProductDetails.css';
@@ -23,7 +23,7 @@ const ProductDetails = ({ addToCart }) => {
         if(res.data.images && res.data.images.length > 0) {
             setMainImage(res.data.images[0]); 
         } else if (res.data.image) {
-            setMainImage(res.data.image); // Fallback for legacy data
+            setMainImage(res.data.image); 
         } else {
             setMainImage("https://placehold.co/400"); 
         }
@@ -33,6 +33,25 @@ const ProductDetails = ({ addToCart }) => {
         setError(true);
       });
   }, [id, API_URL]);
+
+  // --- 🔥 PRICE CALCULATION LOGIC ---
+  // Note: Since DB might not have 'mrp', we simulate it by adding ~30% to price.
+  // If you add 'mrp' to DB later, use: const mrp = product?.mrp || ...
+  const getPriceDetails = () => {
+    if (!product) return { price: 0, mrp: 0, discount: 0 };
+
+    const sellingPrice = product.price;
+    // Mocking MRP: Adding 35% to selling price to make it look real
+    // (Unnoda DB la MRP field irundha 'product.mrp' use pannikko)
+    const mrp = Math.round(sellingPrice * 1.35); 
+    
+    const discount = Math.round(((mrp - sellingPrice) / mrp) * 100);
+
+    return { sellingPrice, mrp, discount };
+  };
+
+  const { sellingPrice, mrp, discount } = getPriceDetails();
+
 
   if (error) return (
       <div style={{textAlign:'center', marginTop:'80px', color: '#555'}}>
@@ -105,8 +124,28 @@ const ProductDetails = ({ addToCart }) => {
 
       {/* --- RIGHT SIDE: DETAILS --- */}
       <div className="details-section" style={{ flex: '1', minWidth: '350px' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '15px', lineHeight: '1.2' }}>{product.name}</h1>
-        <p style={{ fontSize: '1.8rem', color: '#333', fontWeight: 'bold', marginBottom: '20px' }}>₹{product.price.toLocaleString()}</p>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', lineHeight: '1.2' }}>{product.name}</h1>
+        
+        {/* 🔥 NEW: PRICE SECTION 🔥 */}
+        <div className="price-container" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* 1. MRP (Crossed Out) */}
+            <span style={{ textDecoration: 'line-through', color: '#888', fontSize: '1.3rem' }}>
+                ₹{mrp.toLocaleString()}
+            </span>
+
+            {/* 2. Selling Price (Big) */}
+            <span style={{ fontSize: '2rem', color: '#000', fontWeight: 'bold' }}>
+                ₹{sellingPrice.toLocaleString()}
+            </span>
+
+            {/* 3. Discount Badge */}
+            <span style={{ 
+                background: '#e5f9e8', color: '#2ecc71', padding: '4px 8px', 
+                borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' 
+            }}>
+                {discount}% OFF
+            </span>
+        </div>
         
         <div style={{ margin: '20px 0', lineHeight: '1.8', color: '#555', borderTop: '1px solid #eee', borderBottom: '1px solid #eee', padding: '20px 0' }}>
             <p><strong>Size:</strong> {product.size}</p>
