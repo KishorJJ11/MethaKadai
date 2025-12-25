@@ -13,7 +13,7 @@ const AdminOrders = () => {
   // View Order Details State
   const [selectedOrder, setSelectedOrder] = useState(null); 
 
-  // ✅ State for New Product
+  // State for New Product
   const [newProduct, setNewProduct] = useState({
     name: '', price: '', size: '', material: '', warranty: '', 
     images: '', description: '', category: '' 
@@ -21,17 +21,12 @@ const AdminOrders = () => {
 
   const [loading, setLoading] = useState(false);
   
-  // 🔥🔥🔥 THE ULTIMATE URL FIX 🔥🔥🔥
-  // Indha logic padi: 
-  // 1. Local la irundha "http://localhost:5000" eduthukkum.
-  // 2. Live (Render) la irundha "https://methakadai.onrender.com" eduthukkum.
-  // .env file ah namba theva illa.
+  // 🔥 URL LOGIC
   const API_URL = window.location.hostname === "localhost" 
     ? "http://localhost:5000" 
     : "https://methakadai.onrender.com";
 
   useEffect(() => {
-    // Debugging log to check connection
     console.log("Connected to Backend at:", API_URL);
     fetchOrders();
     fetchProducts();
@@ -57,13 +52,33 @@ const AdminOrders = () => {
     }
   };
 
-  // ✅ HELPER: Get Unique Categories for Dropdown
+  // HELPER: Get Unique Categories for Dropdown & Manager
   const existingCategories = Array.isArray(products) 
     ? [...new Set(products.map(p => p.category || "General"))] 
     : [];
 
   const handleChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
+  };
+
+  // 🔥 NEW: Function to Delete Category
+  const deleteCategory = async (categoryName) => {
+    if (categoryName === "General") {
+        return toast.error("You cannot delete the 'General' category.");
+    }
+
+    if (!window.confirm(`Are you sure you want to delete '${categoryName}'?\n\nAll products in this category will be moved to 'General'.`)) {
+        return;
+    }
+
+    try {
+        await axios.put(`${API_URL}/api/categories/delete`, { categoryName });
+        toast.success(`Category '${categoryName}' deleted!`);
+        fetchProducts(); // Refresh list immediately
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to delete category.");
+    }
   };
 
   const deleteProduct = async (id) => {
@@ -98,23 +113,21 @@ const AdminOrders = () => {
     setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
   };
 
-  // 🔥 SUBMIT HANDLER
+  // SUBMIT HANDLER
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // 1. Process Images
     const imageArray = newProduct.images.split(',').map(url => url.trim()).filter(url => url !== ""); 
 
-    // 2. Format Data (Convert Price to Number)
     const productToSend = { 
         ...newProduct, 
-        price: Number(newProduct.price), // Convert String to Number
+        price: Number(newProduct.price), 
         images: imageArray,
-        category: newProduct.category || "General" // Ensure Category isn't empty
+        category: newProduct.category || "General" 
     }; 
 
-    console.log("Attempting to submit to:", `${API_URL}/api/products`); // Debug Log
+    console.log("Attempting to submit to:", `${API_URL}/api/products`);
 
     try {
         if (editId) {
@@ -125,7 +138,6 @@ const AdminOrders = () => {
             await axios.post(`${API_URL}/api/products`, productToSend);
             toast.success('Product added successfully');
         }
-        // Reset Form
         setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
         fetchProducts();
     } catch (error) {
@@ -146,7 +158,6 @@ const AdminOrders = () => {
   return (
     <div className="admin-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
       <h1>Admin Dashboard</h1>
-      {/* Debug Info */}
       <p style={{fontSize:'10px', color:'#888', textAlign:'right'}}>Connected to: {API_URL}</p>
 
       {/* --- SECTION 1: ADD / EDIT PRODUCT --- */}
@@ -159,7 +170,7 @@ const AdminOrders = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
           
-          {/* ✅ CATEGORY UI */}
+          {/* CATEGORY UI */}
           <div style={{gridColumn: 'span 2', background: '#e9ecef', padding: '10px', borderRadius: '5px', border: '1px dashed #ced4da'}}>
              <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#495057'}}>Product Category:</label>
              <div style={{display: 'flex', gap: '10px'}}>
@@ -198,7 +209,41 @@ const AdminOrders = () => {
         </form>
       </div>
 
-      {/* --- SECTION 2: PRODUCT LIST --- */}
+      {/* --- 🔥 SECTION 2: MANAGE CATEGORIES (NEW) --- */}
+      <div className="category-manager" style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '10px', border: '1px solid #ddd' }}>
+        <h2>Manage Categories</h2>
+        <p style={{fontSize: '13px', color: '#666', marginBottom: '15px'}}>Deleting a category will move its products to "General".</p>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            {existingCategories.map(cat => (
+                <div key={cat} style={{ 
+                    display: 'flex', alignItems: 'center', gap: '8px', 
+                    background: cat === 'General' ? '#e9ecef' : '#e3f2fd', 
+                    padding: '8px 15px', borderRadius: '20px', border: '1px solid #ced4da' 
+                }}>
+                    <span style={{fontWeight: 'bold', color: '#333'}}>{cat}</span>
+                    
+                    {/* Don't show delete button for General */}
+                    {cat !== "General" && (
+                        <button 
+                            onClick={() => deleteCategory(cat)}
+                            style={{ 
+                                background: '#ff4d4d', color: 'white', border: 'none', 
+                                width: '20px', height: '20px', borderRadius: '50%', 
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px',
+                                marginLeft: '5px'
+                            }}
+                            title="Delete Category"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+            ))}
+        </div>
+      </div>
+
+      {/* --- SECTION 3: PRODUCT LIST --- */}
       <div className="product-list" style={{ marginBottom: '40px' }}>
         <h2>Available Products ({products.length})</h2>
         <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', padding: '10px' }}>
@@ -230,7 +275,7 @@ const AdminOrders = () => {
         </div>
       </div>
       
-      {/* --- SECTION 3: ORDERS --- */}
+      {/* --- SECTION 4: ORDERS --- */}
       <div className="orders-section">
         <h2>Recent Orders</h2>
         

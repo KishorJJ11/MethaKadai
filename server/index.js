@@ -180,6 +180,25 @@ app.put('/api/orders/:id/cancel', async (req, res) => { try { const o = await Or
 // Seed
 app.get('/api/seed', async (req, res) => { try { const c = await Product.countDocuments(); if(c===0) { await Product.insertMany([{name:"Mattress 1", price:10000, size:"King", material:"Foam", images:["https://placehold.co/400"]}]); res.json({message:"Seeded"}); } else { res.json({message:"Skipped"}); } } catch (e) { res.status(500).json({ error: e.message }); } });
 
+app.put('/api/categories/delete', async (req, res) => {
+    const { categoryName } = req.body;
+    
+    if (categoryName === "General") {
+        return res.status(400).json({ message: "Cannot delete 'General' category." });
+    }
+
+    try {
+        // Find all products in this category and change them to "General"
+        await Product.updateMany(
+            { category: categoryName },
+            { $set: { category: "General" } }
+        );
+        res.json({ message: `Category '${categoryName}' deleted. Products moved to General.` });
+    } catch (e) {
+        res.status(500).json({ message: "Error deleting category" });
+    }
+});
+
 // Health Check
 app.get('/ping', (req, res) => { res.status(200).send('Server is awake! 🟢'); });
 app.get('/', (req, res) => { res.send('Methakadai API is running...'); });
