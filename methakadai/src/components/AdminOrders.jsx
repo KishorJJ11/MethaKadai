@@ -13,9 +13,12 @@ const AdminOrders = () => {
   // View Order Details State
   const [selectedOrder, setSelectedOrder] = useState(null); 
 
-  // State for New Product
+  // ✅ STATE UPDATE: Added 'mrp'
   const [newProduct, setNewProduct] = useState({
-    name: '', price: '', size: '', material: '', warranty: '', 
+    name: '', 
+    price: '', // Selling Price
+    mrp: '',   // MRP (Original Price)
+    size: '', material: '', warranty: '', 
     images: '', description: '', category: '' 
   });
 
@@ -52,7 +55,7 @@ const AdminOrders = () => {
     }
   };
 
-  // HELPER: Get Unique Categories for Dropdown & Manager
+  // HELPER: Get Unique Categories
   const existingCategories = Array.isArray(products) 
     ? [...new Set(products.map(p => p.category || "General"))] 
     : [];
@@ -61,22 +64,19 @@ const AdminOrders = () => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
   };
 
-  // 🔥 NEW: Function to Delete Category
+  // Delete Category
   const deleteCategory = async (categoryName) => {
     if (categoryName === "General") {
         return toast.error("You cannot delete the 'General' category.");
     }
-
     if (!window.confirm(`Are you sure you want to delete '${categoryName}'?\n\nAll products in this category will be moved to 'General'.`)) {
         return;
     }
-
     try {
         await axios.put(`${API_URL}/api/categories/delete`, { categoryName });
         toast.success(`Category '${categoryName}' deleted!`);
-        fetchProducts(); // Refresh list immediately
+        fetchProducts(); 
     } catch (error) {
-        console.error(error);
         toast.error("Failed to delete category.");
     }
   };
@@ -92,12 +92,14 @@ const AdminOrders = () => {
     }
   };
 
+  // ✅ EDIT LOGIC: Include MRP
   const handleEdit = (product) => {
     setEditId(product._id); 
     const imagesString = product.images ? product.images.join(', ') : '';
     setNewProduct({
         name: product.name,
         price: product.price,
+        mrp: product.mrp || '', // Load MRP if it exists
         size: product.size,
         material: product.material,
         warranty: product.warranty,
@@ -110,19 +112,27 @@ const AdminOrders = () => {
 
   const cancelEdit = () => {
     setEditId(null);
-    setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
+    setNewProduct({ name: '', price: '', mrp: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
   };
 
-  // SUBMIT HANDLER
+  // ✅ SUBMIT HANDLER: Send MRP & Validate
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     const imageArray = newProduct.images.split(',').map(url => url.trim()).filter(url => url !== ""); 
 
+    // Simple Validation: MRP shouldn't be less than Selling Price
+    if (Number(newProduct.mrp) > 0 && Number(newProduct.mrp) < Number(newProduct.price)) {
+        toast.error("MRP cannot be less than Selling Price!");
+        setLoading(false);
+        return;
+    }
+
     const productToSend = { 
         ...newProduct, 
         price: Number(newProduct.price), 
+        mrp: Number(newProduct.mrp) || Number(newProduct.price), // Default MRP to Price if empty
         images: imageArray,
         category: newProduct.category || "General" 
     }; 
@@ -138,11 +148,11 @@ const AdminOrders = () => {
             await axios.post(`${API_URL}/api/products`, productToSend);
             toast.success('Product added successfully');
         }
-        setNewProduct({ name: '', price: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
+        setNewProduct({ name: '', price: '', mrp: '', size: '', material: '', warranty: '', images: '', description: '', category: '' });
         fetchProducts();
     } catch (error) {
         console.error("Backend Error:", error);
-        toast.error(error.response?.data?.message || 'Connection Failed! Ensure Backend is running on port 5000.');
+        toast.error(error.response?.data?.message || 'Connection Failed!');
     }
     setLoading(false);
   };
@@ -196,7 +206,19 @@ const AdminOrders = () => {
           </div>
 
           <input name="name" placeholder="Product Name" value={newProduct.name} onChange={handleChange} required style={{ padding: '10px' }} />
-          <input name="price" type="number" placeholder="Price (₹)" value={newProduct.price} onChange={handleChange} required style={{ padding: '10px' }} />
+          
+          {/* 🔥 PRICE INPUTS: MRP & Selling Price 🔥 */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ flex: 1 }}>
+                <label style={{fontSize: '12px', fontWeight: 'bold', color:'#555'}}>MRP (Original)</label>
+                <input name="mrp" type="number" placeholder="MRP (₹)" value={newProduct.mrp} onChange={handleChange} required style={{ padding: '10px', width: '100%' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+                <label style={{fontSize: '12px', fontWeight: 'bold', color:'#555'}}>Selling Price</label>
+                <input name="price" type="number" placeholder="Price (₹)" value={newProduct.price} onChange={handleChange} required style={{ padding: '10px', width: '100%' }} />
+            </div>
+          </div>
+
           <input name="size" placeholder="Size (e.g., Queen 6x5)" value={newProduct.size} onChange={handleChange} required style={{ padding: '10px' }} />
           <input name="material" placeholder="Material (e.g., Memory Foam)" value={newProduct.material} onChange={handleChange} required style={{ padding: '10px' }} />
           <input name="warranty" placeholder="Warranty Duration" value={newProduct.warranty} onChange={handleChange} required style={{ padding: '10px' }} />
@@ -209,7 +231,7 @@ const AdminOrders = () => {
         </form>
       </div>
 
-      {/* --- 🔥 SECTION 2: MANAGE CATEGORIES (NEW) --- */}
+      {/* --- SECTION 2: MANAGE CATEGORIES --- */}
       <div className="category-manager" style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '10px', border: '1px solid #ddd' }}>
         <h2>Manage Categories</h2>
         <p style={{fontSize: '13px', color: '#666', marginBottom: '15px'}}>Deleting a category will move its products to "General".</p>
@@ -222,8 +244,6 @@ const AdminOrders = () => {
                     padding: '8px 15px', borderRadius: '20px', border: '1px solid #ced4da' 
                 }}>
                     <span style={{fontWeight: 'bold', color: '#333'}}>{cat}</span>
-                    
-                    {/* Don't show delete button for General */}
                     {cat !== "General" && (
                         <button 
                             onClick={() => deleteCategory(cat)}
@@ -260,7 +280,17 @@ const AdminOrders = () => {
                     style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', marginTop: '5px' }} 
                 />
                 <p style={{fontSize: '16px', margin: '10px 0 5px'}}><strong>{p.name}</strong></p>
-                <p style={{color: '#555', margin: '0 0 10px'}}>₹{p.price.toLocaleString()}</p>
+                
+                {/* 🔥 DISPLAY BOTH PRICES 🔥 */}
+                <div style={{marginBottom: '10px'}}>
+                    {/* Show MRP crossed out if it's different/higher than price */}
+                    {p.mrp && p.mrp > p.price && (
+                        <span style={{textDecoration:'line-through', color:'#888', fontSize:'13px', marginRight:'5px'}}>
+                            ₹{p.mrp.toLocaleString()}
+                        </span>
+                    )}
+                    <span style={{color: '#000', fontWeight:'bold'}}>₹{p.price.toLocaleString()}</span>
+                </div>
                 
                 <div style={{display: 'flex', gap: '10px'}}>
                     <button onClick={() => handleEdit(p)} style={{ flex: 1, padding: '8px', backgroundColor: '#ffc107', color: 'black', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Edit</button>

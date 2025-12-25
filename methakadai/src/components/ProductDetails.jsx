@@ -43,7 +43,7 @@ const ProductDetails = ({ addToCart }) => {
     const sellingPrice = product.price;
     // Mocking MRP: Adding 35% to selling price to make it look real
     // (Unnoda DB la MRP field irundha 'product.mrp' use pannikko)
-    const mrp = Math.round(sellingPrice * 1.35); 
+    const mrp = product.mrp || product.price; 
     
     const discount = Math.round(((mrp - sellingPrice) / mrp) * 100);
 

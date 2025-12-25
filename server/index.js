@@ -50,7 +50,15 @@ let otpStore = {};
 
 // --- Database Schemas ---
 const productSchema = new mongoose.Schema({
-    name: String, price: Number, size: String, material: String, warranty: String, images: [String], image: String, description: String,
+    name: String, 
+    price: Number, // Idhu dhaan Selling Price
+    mrp: Number,   // ✅ Idhu Pudhu MRP Field
+    size: String, 
+    material: String, 
+    warranty: String, 
+    images: [String], 
+    image: String, 
+    description: String,
     category: { type: String, default: "General" }
 });
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
