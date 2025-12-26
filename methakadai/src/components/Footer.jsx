@@ -17,7 +17,7 @@ const Footer = () => {
           <div className="footer-section brand">
             <h3>MethaKadai</h3>
             <p>
-              Premium quality mattresses delivered directly to your doorstep in Salem. 
+              Premium quality mattresses delivered directly to your doorstep in Tamilnadu. 
               Sleep better, live healthier.
             </p>
             <div className="social-icons">
@@ -40,7 +40,7 @@ const Footer = () => {
           {/* Column 3: Contact Info */}
           <div className="footer-section contact">
             <h4>Contact Us</h4>
-            <p><FaMapMarkerAlt /> Salem, Tamil Nadu, India</p>
+            <p><FaMapMarkerAlt /> Coimbatore, Tamil Nadu, India</p>
             <p><FaPhoneAlt /> +91 98765 43210</p>
             <p><FaEnvelope /> support@methakadai.com</p>
           </div>
@@ -48,9 +48,9 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="footer-bottom">
-          <p>&copy; 2025 MethaKadai. All rights reserved.</p>
+          <p>&copy; 2019 MethaKadai. All rights reserved.</p>
           <p className="developer-credit" onClick={() => setShowDevModal(true)}>
-            Developed by <span>Middle Class Developers 👨‍💻</span>
+            Developed by <span>Middle Class Developers</span>
           </p>
         </div>
       </footer>
