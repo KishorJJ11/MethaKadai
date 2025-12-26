@@ -72,6 +72,14 @@
     font-size: 1.2rem;
     cursor: pointer;
     transition: transform 0.3s;
+    color: #bbb;
+}
+
+.social-icons .icon .a-icon {
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.3s;
+    color: #bbb;
 }
 
 .social-icons .icon:hover {

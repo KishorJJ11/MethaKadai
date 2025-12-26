@@ -21,8 +21,8 @@ const Footer = () => {
               Sleep better, live healthier.
             </p>
             <div className="social-icons">
-              <span className="icon"><FaInstagram /></span>
-              <span className="icon"><FaWhatsapp /></span>
+              <span className="icon"><a href="https://instagram.com/methakadai" target="_blank" rel="noopener noreferrer" className='a-icon'><FaInstagram /></a></span>
+              <span className="icon"><a href="https://wa.me/919487411400" target="_blank" rel="noopener noreferrer" className='a-icon'><FaWhatsapp /></a></span>
             </div>
           </div>
 
@@ -40,9 +40,9 @@ const Footer = () => {
           {/* Column 3: Contact Info */}
           <div className="footer-section contact">
             <h4>Contact Us</h4>
-            <p><FaMapMarkerAlt /> Coimbatore, Tamil Nadu, India</p>
-            <p><FaPhoneAlt /> +91 98765 43210</p>
-            <p><FaEnvelope /> support@methakadai.com</p>
+            <p><FaMapMarkerAlt /> 168, C.K. Colony, Gandhipuram Opp. Omnibus Stand, Coimbatore, Tamil Nadu, India</p>
+            <p><FaPhoneAlt /> +91 9487411400</p>
+            <p><FaEnvelope /> mkmenterprises92@gmail.com</p>
           </div>
         </div>
 
