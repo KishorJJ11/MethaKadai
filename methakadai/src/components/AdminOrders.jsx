@@ -12,13 +12,12 @@ const AdminOrders = () => {
   // State
   const [newProduct, setNewProduct] = useState({
     name: '', price: '', mrp: '', 
-    size: '', thickness: '', // Needs to be string for input, array for DB
+    size: '', thicknessInput: '', 
     material: '', warranty: '', 
     images: '', description: '', category: '' 
   });
 
   const [loading, setLoading] = useState(false);
-  
   const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000" : "https://methakadai.onrender.com";
 
   useEffect(() => { fetchOrders(); fetchProducts(); }, []);
@@ -39,7 +38,6 @@ const AdminOrders = () => {
   };
 
   const existingCategories = Array.isArray(products) ? [...new Set(products.map(p => p.category || "General"))] : [];
-
   const handleChange = (e) => { setNewProduct({ ...newProduct, [e.target.name]: e.target.value }); };
 
   const deleteCategory = async (categoryName) => {
@@ -49,24 +47,27 @@ const AdminOrders = () => {
   };
 
   const deleteProduct = async (id) => {
-    if(!window.confirm("Delete this product?")) return;
+    if(!window.confirm("Delete?")) return;
     try { await axios.delete(`${API_URL}/api/products/${id}`); toast.success("Deleted"); fetchProducts(); } catch (err) { toast.error("Failed"); }
   };
 
-  // ✅ EDIT LOGIC: Convert Array back to Comma String
+  // ✅ EDIT LOGIC: Format "Name:MRP:Price"
   const handleEdit = (product) => {
     setEditId(product._id); 
     const imagesString = product.images ? product.images.join(', ') : '';
     
-    // Thickness Array va "6 inch, 8 inch" nu string ah mathurom
-    const thicknessString = Array.isArray(product.thickness) ? product.thickness.join(', ') : (product.thickness || '');
+    // Convert Object -> String (Name:MRP:Price)
+    let thkString = '';
+    if (product.thicknessOptions && product.thicknessOptions.length > 0) {
+        thkString = product.thicknessOptions.map(t => `${t.name}:${t.mrp}:${t.price}`).join(', ');
+    }
 
     setNewProduct({
         name: product.name,
         price: product.price,
         mrp: product.mrp || product.price,
         size: product.size,
-        thickness: thicknessString, // Set as string for input
+        thicknessInput: thkString, 
         material: product.material,
         warranty: product.warranty,
         images: imagesString,
@@ -78,18 +79,29 @@ const AdminOrders = () => {
 
   const cancelEdit = () => {
     setEditId(null);
-    setNewProduct({ name: '', price: '', mrp: '', size: '', thickness: '', material: '', warranty: '', images: '', description: '', category: '' });
+    setNewProduct({ name: '', price: '', mrp: '', size: '', thicknessInput: '', material: '', warranty: '', images: '', description: '', category: '' });
   };
 
-  // ✅ SUBMIT HANDLER: Convert String to Array
+  // ✅ SUBMIT LOGIC: Parse "Name:MRP:Price"
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     const imageArray = newProduct.images.split(',').map(url => url.trim()).filter(url => url !== ""); 
     
-    // 🔥 Convert "6 inch, 8 inch" -> ["6 inch", "8 inch"]
-    const thicknessArray = newProduct.thickness.split(',').map(t => t.trim()).filter(t => t !== "");
+    // 🔥 PARSE LOGIC 🔥
+    // Expected: "4 inch:15000:10000"
+    const thicknessOptions = newProduct.thicknessInput.split(',').map(t => {
+        const parts = t.split(':');
+        if (parts.length === 3) {
+            // Full Format: Name:MRP:Price
+            return { name: parts[0].trim(), mrp: Number(parts[1].trim()), price: Number(parts[2].trim()) };
+        } else if (parts.length === 2) {
+            // Fallback: Name:Price (Set MRP = Price)
+            return { name: parts[0].trim(), mrp: Number(parts[1].trim()), price: Number(parts[1].trim()) };
+        }
+        return null;
+    }).filter(item => item !== null);
 
     let submitPrice = Number(newProduct.price);
     let submitMrp = Number(newProduct.mrp);
@@ -99,7 +111,7 @@ const AdminOrders = () => {
         ...newProduct, 
         price: submitPrice, 
         mrp: submitMrp, 
-        thickness: thicknessArray, // Send Array to DB
+        thicknessOptions: thicknessOptions, 
         images: imageArray,
         category: newProduct.category || "General" 
     }; 
@@ -113,7 +125,7 @@ const AdminOrders = () => {
             await axios.post(`${API_URL}/api/products`, productToSend);
             toast.success('Added');
         }
-        setNewProduct({ name: '', price: '', mrp: '', size: '', thickness: '', material: '', warranty: '', images: '', description: '', category: '' });
+        setNewProduct({ name: '', price: '', mrp: '', size: '', thicknessInput: '', material: '', warranty: '', images: '', description: '', category: '' });
         fetchProducts();
     } catch (error) { toast.error('Failed'); }
     setLoading(false);
@@ -133,6 +145,7 @@ const AdminOrders = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
           
+          {/* Category Input */}
           <div style={{gridColumn: 'span 2', background: '#e9ecef', padding: '10px', borderRadius: '5px'}}>
              <label>Product Category:</label>
              <div style={{display: 'flex', gap: '10px'}}>
@@ -147,26 +160,35 @@ const AdminOrders = () => {
           <input name="name" placeholder="Product Name" value={newProduct.name} onChange={handleChange} required style={{ padding: '10px' }} />
           
           <div style={{ display: 'flex', gap: '10px' }}>
-            <div style={{ flex: 1 }}><label style={{fontSize: '12px', fontWeight: 'bold'}}>MRP</label><input name="mrp" type="number" placeholder="MRP" value={newProduct.mrp} onChange={handleChange} required style={{ padding: '10px', width: '100%' }} /></div>
-            <div style={{ flex: 1 }}><label style={{fontSize: '12px', fontWeight: 'bold'}}>Price</label><input name="price" type="number" placeholder="Price" value={newProduct.price} onChange={handleChange} required style={{ padding: '10px', width: '100%' }} /></div>
+            <div style={{ flex: 1 }}><label style={{fontSize: '12px', fontWeight: 'bold'}}>Base MRP</label><input name="mrp" type="number" placeholder="MRP" value={newProduct.mrp} onChange={handleChange} required style={{ padding: '10px', width: '100%' }} /></div>
+            <div style={{ flex: 1 }}><label style={{fontSize: '12px', fontWeight: 'bold'}}>Base Price</label><input name="price" type="number" placeholder="Price" value={newProduct.price} onChange={handleChange} required style={{ padding: '10px', width: '100%' }} /></div>
           </div>
 
+          {/* 🔥 NEW THICKNESS INPUT 🔥 */}
           <div style={{ display: 'flex', gap: '10px' }}>
-             <input name="size" placeholder="Size (e.g. King, Queen)" value={newProduct.size} onChange={handleChange} required style={{ padding: '10px', flex:1 }} />
-             {/* 🔥 THICKNESS INPUT 🔥 */}
-             <input name="thickness" placeholder="Thickness (e.g. 6 inch, 8 inch)" value={newProduct.thickness} onChange={handleChange} style={{ padding: '10px', flex:1, border:'1px solid #007bff' }} />
+             <input name="size" placeholder="Size (e.g. King)" value={newProduct.size} onChange={handleChange} required style={{ padding: '10px', flex:1 }} />
+             <div style={{flex: 1.5}}>
+                 <input 
+                    name="thicknessInput" 
+                    placeholder='Format: "4 inch:15000:12000"' 
+                    value={newProduct.thicknessInput} 
+                    onChange={handleChange} 
+                    style={{ padding: '10px', width: '100%', border:'1px solid #007bff' }} 
+                 />
+                 <small style={{fontSize:'10px', color:'#555'}}>Format: <b>Name : MRP : Price</b> (Comma separated)</small>
+             </div>
           </div>
-          <small style={{gridColumn:'span 2', color:'#666', marginTop:'-10px'}}>* For Thickness: Enter values separated by comma (e.g. "5 inch, 6 inch")</small>
 
           <input name="material" placeholder="Material" value={newProduct.material} onChange={handleChange} required style={{ padding: '10px' }} />
           <input name="warranty" placeholder="Warranty" value={newProduct.warranty} onChange={handleChange} required style={{ padding: '10px' }} />
-          <input name="images" placeholder="Image URLs (Comma separated)" value={newProduct.images} onChange={handleChange} required style={{ padding: '10px' }} />
+          <input name="images" placeholder="Image URLs" value={newProduct.images} onChange={handleChange} required style={{ padding: '10px' }} />
           <textarea name="description" placeholder="Description" value={newProduct.description} onChange={handleChange} style={{ gridColumn: 'span 2', padding: '10px', height: '80px' }} />
           
           <button type="submit" disabled={loading} style={{ gridColumn: 'span 2', padding: '15px', background: editId ? '#ffc107' : '#28a745', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>{loading ? "Processing..." : (editId ? "Update Product" : "Add Product")}</button>
         </form>
       </div>
 
+      {/* CATEGORIES & PRODUCTS */}
       <div className="category-manager" style={{ marginBottom: '30px', padding: '20px', border: '1px solid #ddd' }}>
         <h3>Manage Categories</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
@@ -185,13 +207,14 @@ const AdminOrders = () => {
             products.map(p => (
                 <div key={p._id} style={{ border: '1px solid #ddd', padding: '15px', minWidth: '220px', borderRadius: '8px', background: 'white' }}>
                     <span style={{background: '#6c757d', color: 'white', fontSize: '10px', padding: '3px 8px', borderRadius: '10px'}}>{p.category || "General"}</span>
-                    <img src={(p.images && p.images[0]) || "https://placehold.co/400"} alt={p.name} style={{ width: '100%', height: '140px', objectFit: 'cover', marginTop: '5px' }} />
+                    <img src={(p.images && p.images[0]) || "https://placehold.co/400"} onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400"; }} alt={p.name} style={{ width: '100%', height: '140px', objectFit: 'cover', marginTop: '5px' }} />
                     <p style={{fontSize: '16px', margin: '5px 0'}}><strong>{p.name}</strong></p>
+                    
                     <div style={{fontSize: '12px', color: '#555', marginBottom: '5px'}}>
-                        {/* Display Array as String */}
-                        Size: {p.size} | Thk: {Array.isArray(p.thickness) ? p.thickness.join(', ') : (p.thickness || 'N/A')}
+                        Variants: {p.thicknessOptions?.length || 0}
                     </div>
-                    <div style={{marginBottom: '10px'}}>{p.mrp && p.mrp > p.price && <span style={{textDecoration:'line-through', color:'#888', marginRight:'5px'}}>₹{p.mrp}</span>}<span style={{fontWeight:'bold'}}>₹{p.price}</span></div>
+
+                    <div style={{marginBottom: '10px'}}><span style={{fontWeight:'bold'}}>Starts @ ₹{p.price}</span></div>
                     <div style={{display: 'flex', gap: '10px'}}><button onClick={() => handleEdit(p)} style={{ flex: 1, padding: '5px', background: '#ffc107', border: 'none', borderRadius: '4px' }}>Edit</button><button onClick={() => deleteProduct(p._id)} style={{ flex: 1, padding: '5px', background: '#dc3545', color:'white', border: 'none', borderRadius: '4px' }}>Delete</button></div>
                 </div>
             ))
@@ -199,7 +222,7 @@ const AdminOrders = () => {
         </div>
       </div>
       
-      {/* ORDERS SECTION & MODAL (Keep your existing code for Orders and Modal as is, no changes needed there) */}
+      {/* RECENT ORDERS (Same as before) */}
       <div className="orders-section">
         <h2>Recent Orders</h2>
         {!Array.isArray(orders) || orders.length === 0 ? <p style={{color: '#666'}}>No orders found.</p> : (
@@ -222,17 +245,9 @@ const AdminOrders = () => {
                   <td style={{ padding: '12px' }}>{order.name}</td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>{order.cartItems.length}</td>
                   <td style={{ padding: '12px', textAlign: 'right' }}>₹{order.totalAmount.toLocaleString()}</td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', color: 'white', background: order.status === 'Delivered' ? '#28a745' : order.status === 'Cancelled' ? '#dc3545' : order.status === 'Shipped' ? '#17a2b8' : '#ffc107' }}>
-                          {order.status}
-                      </span>
-                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', color: 'white', background: order.status === 'Delivered' ? '#28a745' : order.status === 'Cancelled' ? '#dc3545' : order.status === 'Shipped' ? '#17a2b8' : '#ffc107' }}>{order.status}</span></td>
                   <td style={{ padding: '12px', display:'flex', justifyContent:'center', gap:'10px'}}>
-                    <select onChange={(e) => updateStatus(order._id, e.target.value)} value={order.status} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ced4da' }}>
-                      <option value="Ordered">Ordered</option>
-                      <option value="Shipped">Shipped</option>
-                      <option value="Delivered">Delivered</option>
-                    </select>
+                    <select onChange={(e) => updateStatus(order._id, e.target.value)} value={order.status} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ced4da' }}><option value="Ordered">Ordered</option><option value="Shipped">Shipped</option><option value="Delivered">Delivered</option></select>
                     <button onClick={() => setSelectedOrder(order)} style={{background: '#007bff', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '14px'}}>View</button>
                   </td>
                 </tr>
@@ -254,8 +269,6 @@ const AdminOrders = () => {
                     <p><strong>Customer:</strong> {selectedOrder.name}</p>
                     <p><strong>Phone:</strong> {selectedOrder.phone}</p>
                     <p><strong>Address:</strong> {selectedOrder.address}</p>
-                    <p><strong>Date:</strong> {new Date(selectedOrder.orderDate).toLocaleString()}</p>
-                    <p><strong>Payment:</strong> {selectedOrder.paymentMethod} {selectedOrder.transactionId && `(ID: ${selectedOrder.transactionId})`}</p>
                 </div>
 
                 <h3 style={{marginTop: '20px', background: '#f8f9fa', padding: '10px'}}>Items</h3>
@@ -266,20 +279,17 @@ const AdminOrders = () => {
                             <div style={{flex: 1}}>
                                 <p style={{fontWeight: 'bold', margin: 0}}>{item.name}</p>
                                 <p style={{margin: 0, fontSize: '13px'}}>Size: {item.size} | Qty: {item.quantity}</p>
-                                {item.selectedThickness && <p style={{margin: 0, fontSize: '13px', color: '#d63031', fontWeight: 'bold'}}>Thk: {item.selectedThickness}</p>}
+                                {/* Display Variant Info */}
+                                {item.selectedThickness && <p style={{margin: 0, fontSize: '13px', color: '#d63031', fontWeight: 'bold'}}>Var: {item.selectedThickness.name} (₹{item.selectedThickness.price})</p>}
                             </div>
                             <p style={{fontWeight: 'bold'}}>₹{(item.price * item.quantity).toLocaleString()}</p>
                         </div>
                     ))}
                 </div>
-
-                <div style={{marginTop: '20px', textAlign: 'right', paddingTop: '15px', borderTop: '2px solid #eee'}}>
-                    <h3>Total: <span style={{color: '#28a745'}}>₹{selectedOrder.totalAmount.toLocaleString()}</span></h3>
-                </div>
+                <div style={{marginTop: '20px', textAlign: 'right', paddingTop: '15px', borderTop: '2px solid #eee'}}><h3>Total: <span style={{color: '#28a745'}}>₹{selectedOrder.totalAmount.toLocaleString()}</span></h3></div>
             </div>
         </div>
       )}
-
     </div>
   );
 };

@@ -11,7 +11,7 @@ const ProductDetails = ({ addToCart }) => {
   const [mainImage, setMainImage] = useState(""); 
   const [error, setError] = useState(false);
   
-  // Selected Thickness State (Initially null or first option if available)
+  // Selected Thickness OBJECT (contains name, mrp, price)
   const [selectedThickness, setSelectedThickness] = useState(null);
 
   const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000" : "https://methakadai.onrender.com";
@@ -20,13 +20,13 @@ const ProductDetails = ({ addToCart }) => {
     axios.get(`${API_URL}/api/products/${id}`)
       .then(res => {
         setProduct(res.data);
-        if(res.data.images && res.data.images.length > 0) setMainImage(res.data.images[0]); 
+        if(res.data.images?.length > 0) setMainImage(res.data.images[0]); 
         else if (res.data.image) setMainImage(res.data.image); 
         else setMainImage("https://placehold.co/400");
 
-        // 🔥 Auto-select first thickness if available
-        if (res.data.thickness && res.data.thickness.length > 0) {
-            setSelectedThickness(res.data.thickness[0]);
+        // Auto-select first variant
+        if (res.data.thicknessOptions && res.data.thicknessOptions.length > 0) {
+            setSelectedThickness(res.data.thicknessOptions[0]);
         }
       })
       .catch(err => { setError(true); });
@@ -35,29 +35,36 @@ const ProductDetails = ({ addToCart }) => {
   const handleAddToCart = () => {
     if (!product) return;
     
-    // Check if thickness is required but not selected (Safety check)
-    if (product.thickness && product.thickness.length > 0 && !selectedThickness) {
+    if (product.thicknessOptions?.length > 0 && !selectedThickness) {
         toast.error("Please select a thickness");
         return;
     }
 
-    const productWithThickness = {
+    // Use variant price if available, else base price
+    const finalPrice = selectedThickness ? selectedThickness.price : product.price;
+
+    const productWithVariant = {
         ...product,
-        selectedThickness: selectedThickness // Sending chosen thickness to cart
+        price: finalPrice, 
+        selectedThickness: selectedThickness 
     };
-    addToCart(productWithThickness);
+    addToCart(productWithVariant);
   };
 
   if (error) return <div style={{textAlign:'center', marginTop:'80px'}}><h2>Product Not Found</h2><button onClick={() => navigate('/')}>Back Home</button></div>;
   if (!product) return <div style={{textAlign:'center', marginTop:'80px'}}>Loading...</div>;
 
-  const sellingPrice = Number(product.price);
-  const mrp = (product.mrp && Number(product.mrp) > sellingPrice) ? Number(product.mrp) : sellingPrice;
-  const discount = mrp > sellingPrice ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
-  const savings = mrp - sellingPrice;
+  // 🔥 DYNAMIC PRICE & MRP LOGIC 🔥
+  const currentSellingPrice = selectedThickness ? selectedThickness.price : Number(product.price);
+  
+  // Choose MRP from Variant if available, else use Base MRP
+  const currentMrp = selectedThickness ? selectedThickness.mrp : Number(product.mrp);
+  
+  const discount = currentMrp > currentSellingPrice ? Math.round(((currentMrp - currentSellingPrice) / currentMrp) * 100) : 0;
+  const savings = currentMrp - currentSellingPrice;
 
-  // 🔥 Get Thickness Options from DB
-  const thicknessOptions = Array.isArray(product.thickness) ? product.thickness : [];
+  // Options from DB
+  const thicknessOptions = product.thicknessOptions || [];
 
   return (
     <div className="product-details-container" style={{ padding: '40px', maxWidth: '1100px', margin: '0 auto', display: 'flex', gap: '50px', flexWrap: 'wrap' }}>
@@ -77,36 +84,38 @@ const ProductDetails = ({ addToCart }) => {
       <div className="details-section" style={{ flex: '1', minWidth: '350px' }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{product.name}</h1>
         
+        {/* Dynamic Price Display */}
         <div className="price-container" style={{ marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {mrp > sellingPrice && <span style={{ textDecoration: 'line-through', color: '#888', fontSize: '1.3rem' }}>₹{mrp.toLocaleString()}</span>}
-            <span style={{ fontSize: '2rem', color: '#000', fontWeight: 'bold' }}>₹{sellingPrice.toLocaleString()}</span>
+            {currentMrp > currentSellingPrice && <span style={{ textDecoration: 'line-through', color: '#888', fontSize: '1.3rem' }}>₹{currentMrp.toLocaleString()}</span>}
+            <span style={{ fontSize: '2rem', color: '#000', fontWeight: 'bold' }}>₹{currentSellingPrice.toLocaleString()}</span>
             {discount > 0 && <span style={{ background: '#e5f9e8', color: '#2ecc71', padding: '4px 8px', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' }}>{discount}% OFF</span>}
         </div>
 
         {savings > 0 && <div style={{ marginBottom: '20px', color: '#27ae60', fontSize: '1rem', fontWeight: '600' }}>You save: ₹{savings.toLocaleString()}!</div>}
         
-        {/* 🔥 DYNAMIC THICKNESS SELECTOR 🔥 */}
+        {/* Thickness Selector */}
         {thicknessOptions.length > 0 && (
             <div style={{ marginBottom: '25px' }}>
                 <p style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '1rem', color:'#333' }}>Select Thickness:</p>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {thicknessOptions.map((opt) => (
+                    {thicknessOptions.map((opt, index) => (
                         <button 
-                            key={opt}
+                            key={index}
                             onClick={() => setSelectedThickness(opt)}
                             style={{
                                 padding: '10px 18px',
-                                border: selectedThickness === opt ? '2px solid black' : '1px solid #ccc',
-                                background: selectedThickness === opt ? 'black' : 'white',
-                                color: selectedThickness === opt ? 'white' : 'black',
+                                border: selectedThickness?.name === opt.name ? '2px solid black' : '1px solid #ccc',
+                                background: selectedThickness?.name === opt.name ? 'black' : 'white',
+                                color: selectedThickness?.name === opt.name ? 'white' : 'black',
                                 cursor: 'pointer',
                                 borderRadius: '4px',
                                 fontWeight: '600',
                                 fontSize: '0.9rem',
-                                transition: 'all 0.2s ease'
+                                transition: 'all 0.2s ease',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center'
                             }}
                         >
-                            {opt}
+                            <span>{opt.name}</span>
                         </button>
                     ))}
                 </div>
@@ -114,10 +123,10 @@ const ProductDetails = ({ addToCart }) => {
         )}
 
         <div style={{ margin: '20px 0', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-            <p><strong>Size:</strong> {product.size}</p>
-            <p><strong>Material:</strong> {product.material}</p>
-            <p><strong>Warranty:</strong> {product.warranty}</p>
-            <p style={{ marginTop: '15px' }}>{product.description}</p>
+            <p style={{fontSize: '23px'}}><strong>Size:</strong> {product.size}</p>
+            <p style={{fontSize: '23px'}}><strong>Material:</strong> {product.material}</p>
+            <p style={{fontSize: '23px'}}><strong>Warranty:</strong> {product.warranty}</p>
+            <p style={{ marginTop: '15px', fontSize: '19px' }}>{product.description}</p>
         </div>
 
         <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
@@ -125,9 +134,9 @@ const ProductDetails = ({ addToCart }) => {
             <button onClick={() => toast.success("Added to Wishlist")} style={{ flex: 1, padding: '15px', background: 'white', border: '1px solid black', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>WISHLIST</button>
         </div>
         
-        <div style={{marginTop: '20px', fontSize: '0.9rem', color: '#777'}}>
+        <div style={{marginTop: '20px', fontSize: '1.0rem', color: '#777'}}>
             <p>✓ Free Delivery available</p>
-            <p>✓ 7 Days Return Policy</p>
+            <p>✓ 7 Days Return Policy (Only for defective products) - Contact customer support for more details</p>
             <p>✓ Cash on Delivery available</p>
         </div>
       </div>

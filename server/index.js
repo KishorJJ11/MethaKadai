@@ -54,7 +54,7 @@ const productSchema = new mongoose.Schema({
     price: Number, 
     mrp: Number,   // MRP Field
     size: String, 
-    thickness: [String],
+    thicknessOptions: [{ name: String, mrp: Number, price: Number }],
     material: String, 
     warranty: String, 
     images: [String], 
