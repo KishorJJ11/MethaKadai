@@ -51,8 +51,8 @@ let otpStore = {};
 // --- Database Schemas ---
 const productSchema = new mongoose.Schema({
     name: String, 
-    price: Number, // Idhu dhaan Selling Price
-    mrp: Number,   // ✅ Idhu Pudhu MRP Field
+    price: Number, 
+    mrp: Number,   // MRP Field
     size: String, 
     material: String, 
     warranty: String, 
@@ -68,8 +68,18 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 
+// 🔥 UPDATED ORDER SCHEMA: Added 'username'
 const orderSchema = new mongoose.Schema({
-    name: String, address: String, phone: String, paymentMethod: String, transactionId: { type: String, default: "" }, cartItems: Array, totalAmount: Number, status: { type: String, default: "Ordered" }, orderDate: { type: Date, default: Date.now } 
+    username: String, // Store who placed the order
+    name: String, 
+    address: String, 
+    phone: String, 
+    paymentMethod: String, 
+    transactionId: { type: String, default: "" }, 
+    cartItems: Array, 
+    totalAmount: Number, 
+    status: { type: String, default: "Ordered" }, 
+    orderDate: { type: Date, default: Date.now } 
 });
 const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 
@@ -156,7 +166,6 @@ app.get('/api/products', async (req, res) => { try { const p = await Product.fin
 app.get('/api/products/:id', async (req, res) => { try { const p = await Product.findById(req.params.id); if (!p) return res.status(404).json({ message: "Not found" }); res.json(p); } catch (e) { res.status(500).json({ message: "Error" }); } });
 app.post('/api/products', async (req, res) => { 
     try { 
-        // Ensure category is set if missing
         const productData = {
             ...req.body,
             category: req.body.category || "General",
@@ -166,7 +175,7 @@ app.post('/api/products', async (req, res) => {
         await newP.save(); 
         res.status(201).json({ message: "Added", product: newP }); 
     } catch (e) { 
-        console.error("Backend Error adding product:", e); // Log error for debugging
+        console.error("Backend Error adding product:", e); 
         res.status(500).json({ message: "Error adding product" }); 
     } 
 });
@@ -179,9 +188,30 @@ app.put('/api/users/:username', async (req, res) => { try { const u = await User
 app.post('/api/login', async (req, res) => { try { const u = await User.findOne({ email: req.body.email }); if (!u || u.password !== req.body.password) return res.status(400).json({ message: "Invalid credentials." }); res.json({ message: "Login successful.", username: u.username, email: u.email }); } catch (e) { res.status(500).json({ message: "Error" }); } });
 
 // 5. Orders
-app.post('/api/orders', async (req, res) => { try { const n = new Order(req.body); await n.save(); res.status(201).json({ message: "Ordered" }); } catch (e) { res.status(500).json({ message: "Error" }); } });
+app.post('/api/orders', async (req, res) => { 
+    try { 
+        const n = new Order(req.body); // Frontend sends 'username' in body now
+        await n.save(); 
+        res.status(201).json({ message: "Ordered" }); 
+    } catch (e) { res.status(500).json({ message: "Error" }); } 
+});
+
 app.get('/api/orders', async (req, res) => { try { const o = await Order.find(); res.json(o); } catch (e) { res.status(500).json({ message: "Error" }); } });
-app.get('/api/myorders/:name', async (req, res) => { try { const o = await Order.find({ name: req.params.name }).sort({ orderDate: -1 }); res.json(o); } catch (e) { res.status(500).json({ message: "Error" }); } });
+
+// 🔥 UPDATED: MyOrders fetch Logic
+// Checks for 'username' (Login ID) OR 'name' (Shipping Name) for better safety
+app.get('/api/myorders/:username', async (req, res) => { 
+    try { 
+        const o = await Order.find({ 
+            $or: [
+                { username: req.params.username }, // Login Username matches
+                { name: req.params.username }      // Shipping name matches (Backup)
+            ]
+        }).sort({ orderDate: -1 }); 
+        res.json(o); 
+    } catch (e) { res.status(500).json({ message: "Error" }); } 
+});
+
 app.put('/api/orders/:id/status', async (req, res) => { try { const o = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true }); res.json(o); } catch (e) { res.status(500).json({ message: "Error" }); } });
 app.put('/api/orders/:id/cancel', async (req, res) => { try { const o = await Order.findById(req.params.id); if(!o) return res.status(404).json({message:"Not Found"}); if (o.status==='Shipped') return res.status(400).json({message:"Cannot Cancel"}); o.status="Cancelled"; await o.save(); res.json({message:"Cancelled", order:o}); } catch (e) { res.status(500).json({ message: "Error" }); } });
 
@@ -190,13 +220,10 @@ app.get('/api/seed', async (req, res) => { try { const c = await Product.countDo
 
 app.put('/api/categories/delete', async (req, res) => {
     const { categoryName } = req.body;
-    
     if (categoryName === "General") {
         return res.status(400).json({ message: "Cannot delete 'General' category." });
     }
-
     try {
-        // Find all products in this category and change them to "General"
         await Product.updateMany(
             { category: categoryName },
             { $set: { category: "General" } }

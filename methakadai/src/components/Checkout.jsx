@@ -12,8 +12,10 @@ function Checkout({ cart, clearCart, currentUser }) {
   const SHOP_UPI_ID = "6374174627@upi"; 
   const SHOP_NAME = "Kishore Kishore"; 
 
-  // Smart API URL
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // 🔥 URL FIX (Idhu dhaan main change)
+  const API_URL = window.location.hostname === "localhost" 
+    ? "http://localhost:5000" 
+    : "https://methakadai.onrender.com";
 
   const [formData, setFormData] = useState({
     name: '', address: '', phone: '', paymentMethod: 'COD'
@@ -56,20 +58,23 @@ function Checkout({ cart, clearCart, currentUser }) {
 
     const orderData = {
         ...formData,
+        username: currentUser,
         cartItems: cart,
         totalAmount: totalAmount,
         orderDate: new Date(),
         transactionId: formData.paymentMethod === 'UPI' ? transactionId : 'COD-Order' 
     };
 
+    console.log("Placing Order to:", `${API_URL}/api/orders`); // Debugging Line
+
     try {
         await axios.post(`${API_URL}/api/orders`, orderData);
-        toast.success(formData.paymentMethod === 'UPI' ? "Order placed successfully" : "Order placed successfully");
+        toast.success("Order placed successfully! 🎉");
         clearCart();
-        navigate('/'); 
+        navigate('/myorders'); // Redirect to My Orders page instead of Home
     } catch (error) {
-        console.error(error);
-        toast.error("Failed to place order. Please try again.");
+        console.error("Order Error:", error);
+        toast.error(error.response?.data?.message || "Failed to place order. Check server connection.");
     }
   };
 
