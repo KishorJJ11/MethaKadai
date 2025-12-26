@@ -16,7 +16,7 @@ function Profile({ currentUser, setCurrentUser }) {
     username: '', phone: '', address: '', profilePic: ''
   });
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_URL = window.location.hostname === "localhost" ? "http://localhost:5000" : "https://methakadai.onrender.com";
 
   useEffect(() => {
     if (!currentUser) {
@@ -52,6 +52,12 @@ function Profile({ currentUser, setCurrentUser }) {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+        // Limit file size (e.g., 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("File is too large. Please select an image under 5MB.");
+            return;
+        }
+
         const reader = new FileReader();
         reader.readAsDataURL(file); 
         reader.onloadend = () => {
@@ -71,14 +77,17 @@ function Profile({ currentUser, setCurrentUser }) {
         const res = await axios.put(`${API_URL}/api/users/${currentUser}`, formData);
         toast.success("Profile updated successfully");
         
+        // 🔥 CRITICAL FIX: Update LocalStorage if username changes
         if (formData.username !== currentUser) {
+            localStorage.setItem("methaUser", JSON.stringify(formData.username)); // Fixes session issue
             setCurrentUser(formData.username);
         }
         
         setIsEditing(false);
         setUserData(res.data); 
     } catch (error) {
-        toast.error("Failed to update profile. Please try again.");
+        console.error("Save Error:", error);
+        toast.error("Failed to update. Check Server/Image Size.");
     }
   };
 
@@ -90,18 +99,18 @@ function Profile({ currentUser, setCurrentUser }) {
       
       <div className="profile-card">
         
-        {/* --- 1. HEADER SECTION --- */}
-        <div className="profile-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '25px' }}>
+        {/* --- 1. HEADER SECTION (Corrected Layout) --- */}
+        <div className="profile-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '25px', marginBottom: '30px' }}>
             
-            {/* Image Wrapper (Position Relative is Key here) */}
+            {/* Image Wrapper */}
             <div 
                 className="avatar-wrapper" 
                 onClick={triggerFileInput} 
                 style={{ 
                     position: 'relative', 
-                    width: '100px', 
-                    height: '100px', 
-                    cursor: isEditing ? 'pointer' : 'default' ,
+                    width: '110px', 
+                    height: '110px', 
+                    cursor: isEditing ? 'pointer' : 'default' 
                 }}
             >
                 {/* Profile Image */}
@@ -109,10 +118,10 @@ function Profile({ currentUser, setCurrentUser }) {
                     <img 
                         src={formData.profilePic} 
                         alt="Profile" 
-                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }} 
+                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '4px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }} 
                     />
                 ) : (
-                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#f5d12fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', fontWeight: 'bold', color: '#000001ff' }}>
+                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#f4bf2fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '45px', fontWeight: 'bold', color: '#000', border: '4px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
                         {currentUser === 'admin' ? 'A' : formData.username.charAt(0).toUpperCase()}
                     </div>
                 )}
@@ -121,16 +130,16 @@ function Profile({ currentUser, setCurrentUser }) {
                 {isEditing && (
                     <div style={{
                         position: 'absolute',
-                        bottom: '0',
+                        bottom: '5px',
                         right: '0',
                         background: 'white',
                         borderRadius: '50%',
-                        padding: '6px',
+                        padding: '8px',
                         boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         border: '1px solid #eee'
                     }}>
-                        <MdEdit size={18} color="black" />
+                        <MdEdit size={18} color="#000" />
                     </div>
                 )}
             </div>
@@ -138,7 +147,7 @@ function Profile({ currentUser, setCurrentUser }) {
             {/* 🔥 DULL TEXT (Right Side) */}
             {isEditing && (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ color: '#b2bec3', fontSize: '14px', fontStyle: 'italic' }}>
+                    <span style={{ color: '#b2bec3', fontSize: '13px', fontStyle: 'italic', marginTop: '4px' }}>
                         Click pencil to edit photo
                     </span>
                 </div>
@@ -154,7 +163,7 @@ function Profile({ currentUser, setCurrentUser }) {
             />
         </div>
 
-        {/* --- 2. DETAILS SECTION (Username included here) --- */}
+        {/* --- 2. DETAILS SECTION --- */}
         <div className="profile-details">
             
             {/* USERNAME */}
@@ -225,10 +234,8 @@ function Profile({ currentUser, setCurrentUser }) {
                 </button>
             )}
         </div>
-        <span className='back-home-btn-container'>
-            <button className="back-home-btn" onClick={() => navigate('/')}>← Back to Shopping</button>
-        </span>
-        
+
+        <button className="back-home-btn" onClick={() => navigate('/')}>← Back to Shopping</button>
       </div>
     </div>
   );
