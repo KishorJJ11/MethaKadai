@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { MdEdit } from 'react-icons/md'; // Pencil Icon
 import '../Styles/Profile.css';
 
 function Profile({ currentUser, setCurrentUser }) {
@@ -15,7 +16,6 @@ function Profile({ currentUser, setCurrentUser }) {
     username: '', phone: '', address: '', profilePic: ''
   });
 
-  // Smart API URL switching logic
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
@@ -86,25 +86,65 @@ function Profile({ currentUser, setCurrentUser }) {
 
   return (
     <div className="profile-container">
-      <h2>{currentUser === 'admin' ? 'Administrator Profile' : 'My Profile'}</h2>
+      <h2 className='profile-title'>{currentUser === 'admin' ? 'Administrator Profile' : 'My Profile'}</h2>
       
       <div className="profile-card">
-        <div className="profile-header">
+        
+        {/* --- 1. HEADER SECTION --- */}
+        <div className="profile-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '25px' }}>
             
-            <div className="avatar-container" onClick={triggerFileInput} style={{ cursor: isEditing ? 'pointer' : 'default' }}>
+            {/* Image Wrapper (Position Relative is Key here) */}
+            <div 
+                className="avatar-wrapper" 
+                onClick={triggerFileInput} 
+                style={{ 
+                    position: 'relative', 
+                    width: '100px', 
+                    height: '100px', 
+                    cursor: isEditing ? 'pointer' : 'default' ,
+                }}
+            >
+                {/* Profile Image */}
                 {formData.profilePic ? (
-                    <img src={formData.profilePic} alt="Profile" className="profile-img-circle" />
+                    <img 
+                        src={formData.profilePic} 
+                        alt="Profile" 
+                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }} 
+                    />
                 ) : (
-                    <div className="avatar">
+                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#f5d12fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', fontWeight: 'bold', color: '#000001ff' }}>
                         {currentUser === 'admin' ? 'A' : formData.username.charAt(0).toUpperCase()}
                     </div>
                 )}
-                
+
+                {/* 🔥 PENCIL ICON (Merged on Image) */}
                 {isEditing && (
-                    <div className="camera-overlay">Edit Photo</div>
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '0',
+                        right: '0',
+                        background: 'white',
+                        borderRadius: '50%',
+                        padding: '6px',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: '1px solid #eee'
+                    }}>
+                        <MdEdit size={18} color="black" />
+                    </div>
                 )}
             </div>
 
+            {/* 🔥 DULL TEXT (Right Side) */}
+            {isEditing && (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ color: '#b2bec3', fontSize: '14px', fontStyle: 'italic' }}>
+                        Click pencil to edit photo
+                    </span>
+                </div>
+            )}
+
+            {/* Hidden File Input */}
             <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -112,31 +152,32 @@ function Profile({ currentUser, setCurrentUser }) {
                 accept="image/*"
                 onChange={handleImageUpload}
             />
+        </div>
 
-            {isEditing ? (
-                 <div className="edit-section">
-                    <label>Username:</label>
+        {/* --- 2. DETAILS SECTION (Username included here) --- */}
+        <div className="profile-details">
+            
+            {/* USERNAME */}
+            <div className="detail-row">
+                <span className="label">Username:</span>
+                {isEditing ? (
                     <input 
                         type="text" name="username" value={formData.username} 
                         onChange={handleChange} className="edit-input"
                         disabled={currentUser === 'admin'} 
                     />
-                    <small style={{color: '#636e72'}}>Click photo to update</small>
-                 </div>
-            ) : (
-                <>
-                    <h3>{userData.username}</h3>
-                    <p className="role">{currentUser === 'admin' ? 'System Administrator' : 'Verified Customer'}</p>
-                </>
-            )}
-        </div>
+                ) : (
+                    <span className="value" style={{fontWeight: 'bold', fontSize: '1.1rem'}}>{userData.username}</span>
+                )}
+            </div>
 
-        <div className="profile-details">
+            {/* EMAIL */}
             <div className="detail-row">
                 <span className="label">Email Address:</span>
-                <span className="value">{userData.email}</span>
+                <span className="value" style={{color: '#555'}}>{userData.email}</span>
             </div>
             
+            {/* PHONE */}
             <div className="detail-row">
                 <span className="label">Phone Number:</span>
                 {isEditing ? (
@@ -149,12 +190,14 @@ function Profile({ currentUser, setCurrentUser }) {
                 )}
             </div>
 
+            {/* ADDRESS */}
             <div className="detail-row">
                 <span className="label">Delivery Address:</span>
                 {isEditing ? (
                     <textarea 
                         name="address" value={formData.address} 
                         onChange={handleChange} className="edit-input"
+                        style={{ height: '80px', resize: 'none' }}
                     />
                 ) : (
                     <span className="value">{userData.address || "No address saved"}</span>
@@ -162,6 +205,7 @@ function Profile({ currentUser, setCurrentUser }) {
             </div>
         </div>
 
+        {/* --- 3. ACTIONS --- */}
         <div className="profile-actions">
             {isEditing ? (
                 <>
@@ -181,8 +225,10 @@ function Profile({ currentUser, setCurrentUser }) {
                 </button>
             )}
         </div>
-
-        <button className="back-home-btn" onClick={() => navigate('/')}>← Back to Shopping</button>
+        <span className='back-home-btn-container'>
+            <button className="back-home-btn" onClick={() => navigate('/')}>← Back to Shopping</button>
+        </span>
+        
       </div>
     </div>
   );

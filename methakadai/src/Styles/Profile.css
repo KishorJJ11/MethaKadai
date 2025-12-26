@@ -98,6 +98,7 @@ textarea.edit-input {
     display: flex;
     justify-content: center;
     gap: 15px;
+    padding: 0 15px;
 }
 
 .edit-btn {
@@ -181,4 +182,10 @@ textarea.edit-input {
 /* Hover Effect */
 .avatar-container:hover .profile-img-circle {
     opacity: 0.9;
+}
+
+.profile-title {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #2c3e50;
 }
