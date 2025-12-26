@@ -25,8 +25,6 @@
 /* --- Left Side: Image Section --- */
 .image-section {
   flex: 1;
-  position: sticky;
-  top: 20px;
 }
 
 .main-image-wrapper {
