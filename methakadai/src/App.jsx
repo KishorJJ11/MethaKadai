@@ -33,7 +33,10 @@ function App() {
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
   
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const storedUser = localStorage.getItem("methaUser");
+    return storedUser ? JSON.parse(storedUser) : null;
+});
   
   // 🔥 NEW STATE: Profile Picture Bridge
   const [userAvatar, setUserAvatar] = useState(null);
