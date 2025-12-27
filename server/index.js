@@ -2,7 +2,8 @@
 const dns = require('node:dns');
 dns.setDefaultResultOrder('ipv4first'); 
 
-const path = require('path');
+const path = require('path'); // 🔥 ADDED THIS
+const fs = require('fs');     // 🔥 ADDED THIS (Safe check kaga)
 require('dotenv').config({ path: path.resolve(__dirname, './.env') }); 
 
 const express = require('express');
@@ -200,7 +201,6 @@ app.post('/api/orders', async (req, res) => {
 app.get('/api/orders', async (req, res) => { try { const o = await Order.find(); res.json(o); } catch (e) { res.status(500).json({ message: "Error" }); } });
 
 // 🔥 UPDATED: MyOrders fetch Logic
-// Checks for 'username' (Login ID) OR 'name' (Shipping Name) for better safety
 app.get('/api/myorders/:username', async (req, res) => { 
     try { 
         const o = await Order.find({ 
@@ -237,7 +237,32 @@ app.put('/api/categories/delete', async (req, res) => {
 
 // Health Check
 app.get('/ping', (req, res) => { res.status(200).send('Server is awake! 🟢'); });
-app.get('/', (req, res) => { res.send('Methakadai API is running...'); });
+
+// -------------------------------------------------------------------------
+// 🔥 THE FIX FOR 404 RELOAD ERROR (Without affecting API) 🔥
+// -------------------------------------------------------------------------
+
+// 1. Point to your frontend build folder (Usually 'dist' for Vite)
+const frontendPath = path.join(__dirname, 'dist'); 
+app.use(express.static(frontendPath));
+
+// 2. Catch-All Route (This fixes the 404 on reload)
+// Note: This logic ONLY runs if no API route above matched the request.
+app.get(/.*/, (req, res) => {
+    // If request is for API but not found, send 404 JSON (Don't send HTML)
+    if (req.path.startsWith('/api')) {
+         return res.status(404).json({ message: "API endpoint not found" });
+    }
+
+    // Safety Check: Only send file if 'dist' folder exists (Avoids crash in dev mode)
+    const indexPath = path.join(frontendPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        // If you are in local dev and have no 'dist', this message appears (Safe fallback)
+        res.status(404).send("Frontend build not found. If locally, use Vite port. If deployed, ensure 'npm run build' ran.");
+    }
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => { console.log(`Server active on port ${PORT}`); });
