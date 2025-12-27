@@ -34,11 +34,24 @@ function App() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   
   const [currentUser, setCurrentUser] = useState(null);
+  
+  // 🔥 NEW STATE: Profile Picture Bridge
+  const [userAvatar, setUserAvatar] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   const navigate = useNavigate();
   const API_URL = import.meta.env.DEV ? "http://localhost:5000" : "https://methakadai.onrender.com"; 
+
+  // 🔥 HELPER: Fetch Avatar
+  const fetchUserAvatar = async (uName) => {
+    if(!uName) return;
+    try {
+        const res = await axios.get(`${API_URL}/api/users/${uName}`);
+        if(res.data.profilePic) setUserAvatar(res.data.profilePic);
+    } catch(e) { console.error("Avatar error"); }
+  };
 
   useEffect(() => {
     setLoading(true); 
@@ -50,7 +63,14 @@ function App() {
       .catch(err => { console.error(err); setProducts([]); setLoading(false); });
   }, [API_URL]);
 
-  useEffect(() => { const storedUser = localStorage.getItem("methaUser"); if (storedUser) setCurrentUser(JSON.parse(storedUser)); }, []);
+  useEffect(() => { 
+      const storedUser = localStorage.getItem("methaUser"); 
+      if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setCurrentUser(user);
+          fetchUserAvatar(user); // 🔥 Fetch photo on reload
+      }
+  }, []);
 
   useEffect(() => {
     if(!showLogin) { setAuthView("login"); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setOtp(""); setIsOtpSent(false); }
@@ -70,14 +90,23 @@ function App() {
   const clearCart = () => setCart([]);
   const addToWishlist = (p) => { if (!currentUser) { setShowLogin(true); return; } if (!wishlist.find(i => i._id === p._id)) { setWishlist([...wishlist, p]); toast.success("Added to Wishlist"); } };
   const removeFromWishlist = (id) => setWishlist(wishlist.filter(i => i._id !== id));
-  const handleLogout = () => { localStorage.removeItem("methaUser"); setCurrentUser(null); toast.success("Logged out"); navigate('/'); };
+  
+  const handleLogout = () => { 
+      localStorage.removeItem("methaUser"); 
+      setCurrentUser(null); 
+      setUserAvatar(null); // 🔥 Clear photo
+      toast.success("Logged out"); 
+      navigate('/'); 
+  };
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     if (authView === "login") {
         try {
             const res = await axios.post(`${API_URL}/api/login`, { email, password });
-            toast.success(res.data.message); setCurrentUser(res.data.username);
+            toast.success(res.data.message); 
+            setCurrentUser(res.data.username);
+            fetchUserAvatar(res.data.username); // 🔥 Fetch photo on login
             localStorage.setItem("methaUser", JSON.stringify(res.data.username)); setShowLogin(false);
         } catch (error) { toast.error(error.response?.data?.message || "Login Failed"); }
     } else if (authView === "signup") {
@@ -87,7 +116,9 @@ function App() {
         } else {
             try {
                 const res = await axios.post(`${API_URL}/api/signup`, { username, email, password, otp });
-                toast.success("Registered!"); setCurrentUser(username);
+                toast.success("Registered!"); 
+                setCurrentUser(username);
+                fetchUserAvatar(username); // 🔥 Fetch photo on signup
                 localStorage.setItem("methaUser", JSON.stringify(username)); setShowLogin(false);
             } catch (error) { toast.error("Invalid OTP"); }
         }
@@ -102,7 +133,13 @@ function App() {
   return (
     <div className="app-wrapper">
       <Toaster position="bottom-center" />
-      <Navbar cartCount={cart.length} wishlistCount={wishlist.length} setShowLogin={setShowLogin} currentUser={currentUser} handleLogout={handleLogout} /> 
+      
+      {/* 🔥 PASS 'userAvatar' to Navbar */}
+      <Navbar 
+        cartCount={cart.length} wishlistCount={wishlist.length} setShowLogin={setShowLogin} 
+        currentUser={currentUser} handleLogout={handleLogout}
+        userAvatar={userAvatar} // ✅ Pass State
+      /> 
 
       {/* LOGIN POPUP */}
       {showLogin && (
@@ -152,7 +189,6 @@ function App() {
                     {loading ? (Array.from({length:6}).map((_,i)=><div key={i} className="skeleton-card"></div>)) : (
                         filteredProducts.length > 0 ? (
                             filteredProducts.map(p => {
-                                // 🔥 HOME PAGE PRICE CALCULATION 🔥
                                 const sellingPrice = Number(p.price);
                                 const mrp = (p.mrp && Number(p.mrp) > sellingPrice) ? Number(p.mrp) : sellingPrice;
                                 const discount = mrp > sellingPrice ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
@@ -160,37 +196,33 @@ function App() {
                                 return (
                                 <div key={p._id} className="product-card">
                                     <div onClick={() => navigate(`/product/${p._id}`)} style={{cursor:'pointer', position:'relative'}}>
-                                        <img src={(p.images && p.images[0]) || "https://placehold.co/400"} alt={p.name} loading="lazy" style={{width:'100%', height:'200px', objectFit:'cover'}} onError={(e)=>{e.target.src="https://placehold.co/400"}}/>
-                                        
-                                        {/* DISCOUNT BADGE ON IMAGE */}
-                                        {discount > 0 && (
-                                            <span style={{
-                                                position: 'absolute', top: '10px', left: '10px',
-                                                background: '#ff4d4d', color: 'white', 
-                                                padding: '3px 8px', borderRadius: '4px', 
-                                                fontSize: '11px', fontWeight: 'bold'
-                                            }}>
-                                                {discount}% OFF
-                                            </span>
-                                        )}
+                                            <img src={(p.images && p.images[0]) || "https://placehold.co/400"} alt={p.name} loading="lazy" style={{width:'100%', height:'200px', objectFit:'cover'}} onError={(e)=>{e.target.src="https://placehold.co/400"}}/>
+                                            {discount > 0 && (
+                                                <span style={{
+                                                    position: 'absolute', top: '10px', left: '10px',
+                                                    background: '#ff4d4d', color: 'white', 
+                                                    padding: '3px 8px', borderRadius: '4px', 
+                                                    fontSize: '11px', fontWeight: 'bold'
+                                                }}>
+                                                    {discount}% OFF
+                                                </span>
+                                            )}
                                     </div>
                                     <div className="card-details">
-                                        <h3>{p.name}</h3>
-                                        <p>{p.size}</p>
-                                        
-                                        {/* PRICE SECTION */}
-                                        <div className="actions-row">
-                                            <div style={{display:'flex', flexDirection:'column'}}>
-                                                {mrp > sellingPrice && (
-                                                    <span style={{textDecoration: 'line-through', color: '#888', fontSize: '12px'}}>₹{mrp.toLocaleString()}</span>
-                                                )}
-                                                <span className="price">₹{sellingPrice.toLocaleString()}</span>
+                                            <h3>{p.name}</h3>
+                                            <p>{p.size}</p>
+                                            <div className="actions-row">
+                                                <div style={{display:'flex', flexDirection:'column'}}>
+                                                    {mrp > sellingPrice && (
+                                                        <span style={{textDecoration: 'line-through', color: '#888', fontSize: '12px'}}>₹{mrp.toLocaleString()}</span>
+                                                    )}
+                                                    <span className="price">₹{sellingPrice.toLocaleString()}</span>
+                                                </div>
+                                                <div className="buttons-group">
+                                                    <button className="wishlist-btn" onClick={() => addToWishlist(p)}>&hearts;</button>
+                                                    <button className="cart-btn" onClick={() => addToCart(p)}>Add</button>
+                                                </div>
                                             </div>
-                                            <div className="buttons-group">
-                                                <button className="wishlist-btn" onClick={() => addToWishlist(p)}>&hearts;</button>
-                                                <button className="cart-btn" onClick={() => addToCart(p)}>Add</button>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             )})
@@ -205,7 +237,19 @@ function App() {
         <Route path="/cart" element={<Cart cart={cart} removeFromCart={removeFromCart} updateQuantity={updateQuantity} />} />
         <Route path="/wishlist" element={<Wishlist wishlist={wishlist} addToCart={addToCart} removeFromWishlist={removeFromWishlist} />} />
         <Route path="/checkout" element={<Checkout cart={cart} clearCart={clearCart} currentUser={currentUser} />} />
-        <Route path="/profile" element={<Profile currentUser={currentUser} setCurrentUser={setCurrentUser} />} />
+        
+        {/* 🔥 PASS 'setUserAvatar' to Profile */}
+        <Route 
+            path="/profile" 
+            element={
+                <Profile 
+                    currentUser={currentUser} 
+                    setCurrentUser={setCurrentUser} 
+                    setUserAvatar={setUserAvatar} // ✅ Pass Setter Logic
+                />
+            } 
+        />
+        
         <Route path="/myorders" element={<MyOrders currentUser={currentUser} />} />
         <Route path="/admin" element={<AdminOrders />} />
       </Routes>

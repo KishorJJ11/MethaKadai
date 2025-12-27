@@ -5,7 +5,8 @@ import { toast } from 'react-hot-toast';
 import { MdEdit } from 'react-icons/md'; // Pencil Icon
 import '../Styles/Profile.css';
 
-function Profile({ currentUser, setCurrentUser }) {
+// 🔥 CHANGE 1: Added 'setUserAvatar' prop here
+function Profile({ currentUser, setCurrentUser, setUserAvatar }) {
   const navigate = useNavigate();
   const fileInputRef = useRef(null); 
 
@@ -81,6 +82,11 @@ function Profile({ currentUser, setCurrentUser }) {
         if (formData.username !== currentUser) {
             localStorage.setItem("methaUser", JSON.stringify(formData.username)); // Fixes session issue
             setCurrentUser(formData.username);
+        }
+
+        // 🔥 CHANGE 2: Immediately update the Navbar image using the setter from App.jsx
+        if (formData.profilePic && setUserAvatar) {
+            setUserAvatar(formData.profilePic);
         }
         
         setIsEditing(false);

@@ -4,7 +4,8 @@ import { toast } from 'react-hot-toast';
 import '../Styles/Navbar.css'; 
 import logo from '../assets/weblogo.jpeg';
 
-function Navbar({ cartCount, wishlistCount, setShowLogin, currentUser, handleLogout }) {
+// 🔥 CHANGE 1: Added 'userAvatar' prop here
+function Navbar({ cartCount, wishlistCount, setShowLogin, currentUser, handleLogout, userAvatar }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -63,8 +64,13 @@ function Navbar({ cartCount, wishlistCount, setShowLogin, currentUser, handleLog
                   ⏻
               </button>
 
-              <div className="nav-avatar" onClick={() => navigate('/profile')} title="Go to Profile">
-                  {currentUser.charAt(0).toUpperCase()}
+              {/* 🔥 CHANGE 2: Updated Avatar display logic */}
+              <div className="nav-avatar" onClick={() => navigate('/profile')} title="Go to Profile" style={{padding: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  {userAvatar ? (
+                      <img src={userAvatar} alt={currentUser} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                  ) : (
+                      currentUser.charAt(0).toUpperCase()
+                  )}
               </div>
           </div>
         ) : (
